@@ -5,6 +5,7 @@
 
 import { Cabana } from '../models/models.cabanas.js';
 
+//actulizar
 export const CabanasController = {
     
     async getAllCabanas(req, res) {
