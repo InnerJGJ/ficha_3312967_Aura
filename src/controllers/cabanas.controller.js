@@ -3,10 +3,9 @@
  * Maneja las peticiones HTTP para cabañas
  */
 
-import { Cabana } from '../models/models.cabanas.js';
+const { Cabana } = require('../models/models.cabanas.js');
 
-//actulizar
-export const CabanasController = {
+const CabanasController = {
     
     async getAllCabanas(req, res) {
         try {
@@ -105,3 +104,5 @@ export const CabanasController = {
         }
     }
 };
+
+module.exports = CabanasController;

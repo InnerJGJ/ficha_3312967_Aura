@@ -1,8 +1,8 @@
-const habitacionService = require('../services/habitacion.service');
+const { getAll, getById, create, update, remove } = require('../services/habitacion.service.js');
 
 const getAllHabitaciones = async (req, res) => {
     try {
-        const habitaciones = await habitacionService.getAll();
+        const habitaciones = await getAll();
         res.json(habitaciones);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -11,7 +11,7 @@ const getAllHabitaciones = async (req, res) => {
 
 const createHabitacion = async (req, res) => {
     try {
-        const habitacion = await habitacionService.create(req.body);
+        const habitacion = await create(req.body);
         res.status(201).json(habitacion);
     } catch (error) {
         // Validación para no repetir nombres
@@ -24,7 +24,7 @@ const createHabitacion = async (req, res) => {
 
 const updateHabitacion = async (req, res) => {
     try {
-        const habitacion = await habitacionService.update(req.params.id, req.body);
+        const habitacion = await update(req.params.id, req.body);
         if (habitacion) {
             res.json(habitacion);
         } else {
@@ -37,7 +37,7 @@ const updateHabitacion = async (req, res) => {
 
 const deleteHabitacion = async (req, res) => {
     try {
-        await habitacionService.remove(req.params.id);
+        await remove(req.params.id);
         res.json({ message: "Habitación eliminada correctamente" });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -46,7 +46,7 @@ const deleteHabitacion = async (req, res) => {
 
 const getHabitacionById = async (req, res) => {
     try {
-        const habitacion = await habitacionService.getById(req.params.id);
+        const habitacion = await getById(req.params.id);
         if (habitacion) {
             res.json(habitacion);
         } else {

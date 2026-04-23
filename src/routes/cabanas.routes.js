@@ -1,15 +1,14 @@
-import express from 'express';
-import { CabanasController } from '../controllers/cabanas.controller.js';
-import { validarCabana } from '../middlewares/validation.middleware.js';
- 
+const express = require('express');
 const router = express.Router();
- 
-router.get('/cabanas',                          CabanasController.getAllCabanas);
-router.get('/cabanas/:IDCabana',                CabanasController.getCabanaById);
-router.get('/cabanas/:IDCabana/habitaciones',   CabanasController.getHabitacionesByCabana);
-router.post('/cabanas',          validarCabana, CabanasController.createCabana);
-router.put('/cabanas/:IDCabana', validarCabana, CabanasController.updateCabana);
-router.put('/cabanas/:IDCabana/estado',         CabanasController.updateEstadoCabana);
-router.delete('/cabanas/:IDCabana',             CabanasController.deleteCabana);
- 
-export default router;
+const CabanasController = require('../controllers/cabanas.controller.js');
+
+// Rutas CRUD de cabanas
+router.get('/',                          CabanasController.getAllCabanas);
+router.get('/:IDCabana',                CabanasController.getCabanaById);
+router.get('/:IDCabana/habitaciones',   CabanasController.getHabitacionesByCabana);
+router.post('/',          CabanasController.createCabana);
+router.put('/:IDCabana', CabanasController.updateCabana);
+router.put('/:IDCabana/estado',         CabanasController.updateEstadoCabana);
+router.delete('/:IDCabana',             CabanasController.deleteCabana);
+
+module.exports = router;

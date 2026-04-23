@@ -3,9 +3,9 @@
  * Maneja las operaciones de base de datos para cabañas
  */
 
-import pool from '../config/db.js';
+const pool = require('../config/db.js');
 
-export const Cabana = {
+const Cabana = {
     
     // Obtener todas las cabañas
     async getAll() {
@@ -64,4 +64,4 @@ export const Cabana = {
     }
 };
 
-export default Cabana;
+module.exports = Cabana;

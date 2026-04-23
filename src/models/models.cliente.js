@@ -3,9 +3,9 @@
  * Maneja las operaciones de base de datos para clientes
  */
 
-import pool from '../config/db.js';
+const pool = require('../config/db.js');
 
-export const Cliente = {
+const Cliente = {
 
     // Obtener todos los clientes
     async getAll() {
@@ -83,4 +83,4 @@ export const Cliente = {
     }
 };
 
-export default Cliente;
+module.exports = Cliente;

@@ -1,10 +1,10 @@
-import pool from '../config/db.js';
+const pool = require('../config/db.js');
 
 // ⚠️ MAPEO: La BD usa "Email", pero el frontend usa "Correo"
 // Este archivo mapea automáticamente: Correo (frontend) -> Email (BD)
 
 // Crear cliente
-export const create = async (cliente) => {
+const create = async (cliente) => {
     const { NroDocumento, Nombre, Apellido, Correo, Telefono, Estado } = cliente;
 
     const [result] = await pool.query(
@@ -18,7 +18,7 @@ export const create = async (cliente) => {
 };
 
 // Obtener todos los clientes
-export const getAll = async () => {
+const getAll = async () => {
     const [rows] = await pool.query('SELECT * FROM clientes');
     // Mapear Email -> Correo para consistencia con el frontend
     return rows.map(cliente => ({
@@ -28,7 +28,7 @@ export const getAll = async () => {
 };
 
 // Obtener cliente por IDCliente
-export const getById = async (id) => {
+const getById = async (id) => {
     const [rows] = await pool.query(
         'SELECT * FROM clientes WHERE IDCliente = ?',
         [id]
@@ -40,7 +40,7 @@ export const getById = async (id) => {
 };
 
 // Actualizar cliente
-export const updateCliente = async (id, cliente) => {
+const updateCliente = async (id, cliente) => {
     const { NroDocumento, Nombre, Apellido, Correo, Telefono } = cliente;
 
     const [result] = await pool.query(
@@ -54,7 +54,7 @@ export const updateCliente = async (id, cliente) => {
 };
 
 // Actualizar estado del cliente
-export const updateEstadoCliente = async (id, estado) => {
+const updateEstadoCliente = async (id, estado) => {
     await pool.query(
         'UPDATE clientes SET Estado=? WHERE IDCliente=?',
         [estado, id]
@@ -63,11 +63,20 @@ export const updateEstadoCliente = async (id, estado) => {
 };
 
 // Eliminar cliente
-export const remove = async (id) => {
+const remove = async (id) => {
     const [result] = await pool.query(
         'DELETE FROM clientes WHERE IDCliente=?',
         [id]
     );
     return result.affectedRows > 0;
+};
+
+module.exports = {
+    create,
+    getAll,
+    getById,
+    updateCliente,
+    updateEstadoCliente,
+    remove
 };
 

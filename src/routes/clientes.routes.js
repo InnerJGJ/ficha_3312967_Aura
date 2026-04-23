@@ -1,15 +1,14 @@
-import express from 'express';
-import { ClientesController } from '../controllers/clientes.controller.js';
-import { validarCliente } from '../middlewares/validation.middleware.js';
-
+const express = require('express');
 const router = express.Router();
+const ClientesController = require('../controllers/clientes.controller.js');
 
-router.post('/clientes', validarCliente, ClientesController.createCliente);
-router.get('/clientes', ClientesController.getAllClientes);
-router.get('/clientes/:IDCliente', ClientesController.getClienteById);
-router.put('/clientes/:IDCliente', validarCliente, ClientesController.updateCliente);
-router.put('/clientes/:IDCliente/estado', ClientesController.updateEstadoCliente);
-router.delete('/clientes/:IDCliente', ClientesController.deleteCliente);
+// Rutas CRUD de clientes
+router.post('/', ClientesController.createCliente);
+router.get('/', ClientesController.getAllClientes);
+router.get('/:IDCliente', ClientesController.getClienteById);
+router.put('/:IDCliente', ClientesController.updateCliente);
+router.put('/:IDCliente/estado', ClientesController.updateEstadoCliente);
+router.delete('/:IDCliente', ClientesController.deleteCliente);
 
-export default router;
+module.exports = router;
 

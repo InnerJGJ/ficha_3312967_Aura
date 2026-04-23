@@ -2,9 +2,9 @@
  * Controller: Clientes
  */
 
-import { Cliente } from '../models/models.cliente.js';
+const { Cliente } = require('../models/models.cliente.js');
 
-export const ClientesController = {
+const ClientesController = {
 
     async getAllClientes(req, res) {
         try {
@@ -69,4 +69,6 @@ export const ClientesController = {
         }
     }
 };
+
+module.exports = ClientesController;
 
