@@ -3,7 +3,7 @@
  * Maneja las peticiones HTTP para cabañas
  */
 
-const { Cabana } = require('../models/models.cabanas.js');
+const Cabana = require('../models/models.cabanas.js');
 
 const CabanasController = {
     

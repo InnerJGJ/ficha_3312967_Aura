@@ -89,9 +89,16 @@ function marcarNavActivo() {
 
 // ===== PAGINACIÓN =====
 function renderizarPagina() {
-  const containerId = `${tipoModuloActual}-container`;
+  const containerId = tipoModuloActual === 'clientes'
+    ? 'lista'
+    : tipoModuloActual === 'cabanas'
+      ? 'lista-cabanas'
+      : `${tipoModuloActual}-container`;
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  const totalPaginas = Math.max(Math.ceil(datosFiltrados.length / itemsPorPagina), 1);
+  if (paginaActual > totalPaginas) paginaActual = totalPaginas;
 
   const inicio = (paginaActual - 1) * itemsPorPagina;
   const fin = inicio + itemsPorPagina;
@@ -103,21 +110,177 @@ function renderizarPagina() {
     return;
   }
 
-  container.innerHTML = itemsAMostrar.map(item => {
-    if (tipoModuloActual === 'habitaciones') return templateHabitacion(item);
-    if (tipoModuloActual === 'paquetes')     return templatePaquete(item);
-    if (tipoModuloActual === 'servicios')    return templateServicio(item);
-  }).join('');
+  if (tipoModuloActual === 'clientes') {
+    container.innerHTML = renderTablaClientes(itemsAMostrar);
+  } else if (tipoModuloActual === 'cabanas') {
+    container.innerHTML = renderTablaCabanas(itemsAMostrar);
+  } else {
+    container.innerHTML = itemsAMostrar.map(item => {
+      if (tipoModuloActual === 'habitaciones') return templateHabitacion(item);
+      if (tipoModuloActual === 'paquetes')     return templatePaquete(item);
+      if (tipoModuloActual === 'servicios')    return templateServicio(item);
+      if (tipoModuloActual === 'clientes')     return templateCliente(item);
+      if (tipoModuloActual === 'cabanas')      return templateCabana(item);
+    }).join('');
+  }
 
   renderPaginacion(datosFiltrados.length);
+
+  if (window.lucide) {
+    lucide.createIcons({ parent: container });
+  }
+}
+
+function escapeJSString(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\"/g, '&quot;');
+}
+
+function templateFilaCliente(cliente) {
+  const itemJson = JSON.stringify(cliente).replace(/"/g, '&quot;');
+  const id = escapeJSString(cliente.IDCliente || '');
+  const documento = escapeJSString(cliente.NroDocumento || '');
+  const nombre = escapeJSString(cliente.Nombre || '');
+  const apellido = escapeJSString(cliente.Apellido || '');
+  const direccion = escapeJSString(cliente.Direccion || '');
+  const correo = escapeJSString(cliente.Correo || cliente.Email || '');
+  const telefono = escapeJSString(cliente.Telefono || '');
+  const estado = cliente.Estado ?? 1;
+  const estadoTexto = obtenerTextoEstadoCliente(estado);
+  const estadoIcono = obtenerIconoEstadoCliente(estado);
+
+  return `
+    <tr>
+      <td>${nombre} ${apellido}</td>
+      <td>${documento}</td>
+      <td>${correo}</td>
+      <td>${telefono}</td>
+      <td>
+        <span class="badge ${estado === 1 ? 'badge--activo' : 'badge--inactivo'}">${estadoTexto}</span>
+      </td>
+      <td class="acciones-col">
+        <button class="btn icon-btn ${estado === 1 ? 'btn-verde' : 'btn-peligro'}" aria-label="${estadoTexto}" title="${estadoTexto}" onclick="toggleEstadoCliente('${id}', ${estado})">
+          <i data-lucide="${estadoIcono}"></i>
+        </button>
+        <button class="btn btn-secundario icon-btn" aria-label="Ver cliente" title="Ver cliente" onclick="mostrarDetalles(${itemJson}, 'Cliente')">
+          <i data-lucide="eye"></i>
+        </button>
+        <button class="btn btn-primario icon-btn" aria-label="Editar cliente" title="Editar cliente" onclick="editarCliente('${id}', '${documento}', '${nombre}', '${apellido}', '${direccion}', '${correo}', '${telefono}', ${estado})">
+          <i data-lucide="edit-2"></i>
+        </button>
+        <button class="btn btn-peligro icon-btn" aria-label="Borrar cliente" title="Borrar cliente" onclick="eliminarCliente('${id}')">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </td>
+    </tr>`;
+}
+
+function renderTablaClientes(clientes) {
+  return `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Documento</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${clientes.map(templateFilaCliente).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function templateFilaCabana(cabana) {
+  const id = escapeJSString(cabana.IDCabana || '');
+  const nombre = escapeJSString(cabana.NombreCabana || '');
+  const descripcion = escapeJSString(cabana.Descripcion || '');
+  const capacidad = escapeJSString(cabana.CapacidadPersonas || '0');
+  const precio = escapeJSString(cabana.PrecioNoche || '0');
+  const estado = [1, 2, 3, 4, 5].includes(Number(cabana.Estado)) ? Number(cabana.Estado) : 1;
+  const estadoTexto = obtenerTextoEstadoCabana(estado);
+  const estadoIcono = obtenerIconoEstadoCabana(estado);
+  const itemJson = JSON.stringify(cabana).replace(/"/g, '&quot;');
+
+  return `
+    <tr>
+      <td>${nombre}</td>
+      <td>${descripcion}</td>
+      <td>${capacidad}</td>
+      <td>$${Number(cabana.PrecioNoche || 0).toLocaleString('es-CO')}</td>
+      <td class="acciones-col">
+        <button class="btn icon-btn ${estado === 1 ? 'btn-secundario' : estado === 2 ? 'btn-morado' : estado === 3 ? 'btn-azul' : estado === 4 ? 'btn-peligro' : 'btn-verde'}" aria-label="${estadoTexto}" title="${estadoTexto}" onclick="toggleEstadoCabana('${id}', ${estado})">
+          <i data-lucide="${estadoIcono}"></i>
+        </button>
+        <button class="btn btn-secundario icon-btn" aria-label="Ver cabaña" title="Ver cabaña" onclick="mostrarDetalleCabana(${itemJson})">
+          <i data-lucide="eye"></i>
+        </button>
+        <button class="btn btn-primario icon-btn" aria-label="Editar cabaña" title="Editar cabaña" onclick="editarCabana('${id}', '${nombre}', '${descripcion}', '${capacidad}', '${precio}', ${estado}, '${escapeJSString(cabana.ImagenCabana || '')}')">
+          <i data-lucide="edit-2"></i>
+        </button>
+        <button class="btn btn-peligro icon-btn" aria-label="Borrar cabaña" title="Borrar cabaña" onclick="eliminarCabana('${id}')">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </td>
+    </tr>`;
+}
+
+function renderTablaCabanas(cabanas) {
+  return `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cabaña</th>
+            <th>Descripción</th>
+            <th>Capacidad</th>
+            <th>Precio</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cabanas.map(templateFilaCabana).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function renderPaginacion(totalItems) {
-  const navPaginacion = document.getElementById('paginacion');
-  if (!navPaginacion) return;
+  const paginationId = tipoModuloActual === 'clientes'
+    ? 'paginacion-clientes'
+    : tipoModuloActual === 'cabanas'
+      ? 'paginacion-cabanas'
+      : 'paginacion';
+  const infoId = tipoModuloActual === 'clientes'
+    ? 'paginacion-info-clientes'
+    : tipoModuloActual === 'cabanas'
+      ? 'paginacion-info-cabanas'
+      : 'paginacion-info';
 
-  const totalPaginas = Math.ceil(totalItems / itemsPorPagina);
+  const navPaginacion = document.getElementById(paginationId);
+  const infoPaginacion = document.getElementById(infoId);
+
+  const nombreModulo = tipoModuloActual === 'clientes'
+    ? 'clientes'
+    : tipoModuloActual === 'cabanas'
+      ? 'cabañas'
+      : tipoModuloActual;
+
+  const totalPaginas = Math.max(Math.ceil(totalItems / itemsPorPagina), 1);
+  if (infoPaginacion) {
+    infoPaginacion.textContent = totalItems > 0
+      ? `Página ${paginaActual} de ${totalPaginas} · Total ${totalItems} ${nombreModulo}`
+      : `No hay ${nombreModulo} disponibles`;
+  }
+
+  if (!navPaginacion) return;
   navPaginacion.innerHTML = '';
+
+  if (totalItems === 0) return;
 
   for (let i = 1; i <= totalPaginas; i++) {
     const boton = document.createElement('button');
@@ -195,6 +358,123 @@ function templateServicio(ser) {
       </div>
     </div>`;
 }
+
+function obtenerTextoEstadoCliente(estado) {
+  return estado === 1 || estado === '1' || estado === true
+    ? 'Activo'
+    : 'Inactivo';
+}
+
+function obtenerEtiquetaBotonEstadoCliente(estado) {
+  return estado === 1 || estado === '1' || estado === true
+    ? 'Desactivar'
+    : 'Activar';
+}
+
+function obtenerIconoEstadoCliente(estado) {
+  return estado === 1 || estado === '1' || estado === true
+    ? 'check-circle'
+    : 'x-circle';
+}
+
+function templateCliente(cliente) {
+  const estado = cliente.Estado ?? 1;
+  const estadoTexto = obtenerTextoEstadoCliente(estado);
+  const estadoIcono = obtenerIconoEstadoCliente(estado);
+
+  return `
+    <div class="card">
+      <div class="card__contenido">
+        <h3 class="card__titulo">${cliente.Nombre} ${cliente.Apellido}</h3>
+        <p class="card__descripcion">Documento: ${cliente.NroDocumento}</p>
+        <p class="card__descripcion">Dirección: ${cliente.Direccion || 'Sin dirección'}</p>
+        <p class="card__descripcion">Correo: ${cliente.Correo || cliente.Email || 'Sin correo'}</p>
+        <p class="card__descripcion">Teléfono: ${cliente.Telefono || 'Sin teléfono'}</p>
+        <p class="card__descripcion">Estado: ${estadoTexto}</p>
+        <div class="card__acciones">
+          <button class="estado-icono ${estado === 1 ? 'activo' : 'inactivo'}" aria-label="${estadoTexto}" title="${estadoTexto}" onclick="toggleEstadoCliente('${cliente.IDCliente}', ${estado})">
+            <i data-lucide="${estadoIcono}"></i>
+          </button>
+          <button class="btn btn-primario" onclick="editarCliente('${cliente.IDCliente}', '${cliente.NroDocumento}', '${cliente.Nombre}', '${cliente.Apellido}', '${cliente.Direccion || ''}', '${cliente.Correo || ''}', '${cliente.Telefono || ''}', ${estado})">Editar</button>
+          <button class="btn btn-peligro" onclick="eliminarCliente('${cliente.IDCliente}')">Borrar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function templateCabana(cabana) {
+  const estadoTexto = cabana.Estado === 1 || cabana.Estado === '1' || cabana.Estado === true
+    ? '✅ Disponible'
+    : '❌ No disponible';
+  const itemJson = JSON.stringify(cabana).replace(/"/g, '&quot;');
+
+  return `
+    <div class="card">
+      ${cabana.ImagenCabana
+        ? `<img src="${cabana.ImagenCabana}" class="card__imagen" alt="${cabana.NombreCabana || 'Cabaña'}" onerror="this.src='../assets/placeholder.jpg'" />`
+        : `<div class="card__imagen" style="background:var(--color-acento); display:flex; align-items:center; justify-content:center; font-size:3rem;">🏕️</div>`
+      }
+      <div class="card__contenido">
+        <h3 class="card__titulo">${cabana.NombreCabana || 'Cabaña'}</h3>
+        <p class="card__descripcion">${cabana.Descripcion || 'Sin descripción'}</p>
+        <p class="card__descripcion">Capacidad: ${cabana.CapacidadPersonas || 'N/A'}</p>
+        <p class="card__descripcion">Precio: $${cabana.PrecioNoche || 0}</p>
+        <p class="card__descripcion">Estado: ${estadoTexto}</p>
+        <div class="card__acciones">
+          <button class="btn btn-secundario" onclick="mostrarDetalleCabana(${itemJson})">Ver Detalles</button>
+          <button class="btn btn-primario" onclick="editarCabana('${cabana.IDCabana}', '${cabana.NombreCabana}', '${cabana.Descripcion || ''}', '${cabana.CapacidadPersonas || ''}', '${cabana.PrecioNoche || ''}', '${cabana.Estado ?? 1}', '${cabana.ImagenCabana || ''}')">Editar</button>
+          <button class="btn btn-peligro" onclick="eliminarCabana('${cabana.IDCabana}')">Borrar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function obtenerTextoEstadoCabana(estado) {
+  switch (Number(estado)) {
+    case 1: return 'En mantenimiento';
+    case 2: return 'Reservado';
+    case 3: return 'En limpieza';
+    case 4: return 'Inactivo temporal';
+    case 5: return 'Disponible';
+    default: return 'Estado desconocido';
+  }
+}
+
+function obtenerIconoEstadoCabana(estado) {
+  switch (Number(estado)) {
+    case 1: return 'wrench';
+    case 2: return 'calendar-check';
+    case 3: return 'sparkles';
+    case 4: return 'x-circle';
+    case 5: return 'check-circle';
+    default: return 'help-circle';
+  }
+}
+
+function siguienteEstadoCabana(estadoActual) {
+  const estado = Number(estadoActual);
+  if (estado === 1) return 2;
+  if (estado === 2) return 3;
+  if (estado === 3) return 4;
+  if (estado === 4) return 5;
+  return 1;
+}
+
+window.mostrarDetalleCabana = (cabana) => {
+  const overlay = document.getElementById('modal-ver-cabana');
+  if (!overlay) return;
+
+  document.getElementById('ver-cabana-titulo').textContent = cabana.NombreCabana || 'Cabaña';
+  const imagenEl = document.getElementById('ver-cabana-imagen');
+  imagenEl.src = cabana.ImagenCabana || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1000';
+  imagenEl.alt = cabana.NombreCabana || 'Imagen de la cabaña';
+  document.getElementById('ver-cabana-descripcion').textContent = cabana.Descripcion || 'Sin descripción disponible.';
+  document.getElementById('ver-cabana-capacidad').textContent = `Capacidad: ${cabana.CapacidadPersonas || 'N/A'} personas`;
+  document.getElementById('ver-cabana-precio').textContent = `Precio x noche: $${Number(cabana.PrecioNoche || 0).toLocaleString('es-CO')}`;
+  document.getElementById('ver-cabana-estado').textContent = `Estado: ${obtenerTextoEstadoCabana(cabana.Estado)}`;
+
+  overlay.classList.add('activo');
+};
 
 // ===== TEMPLATES INICIO (solo vista, sin botones admin) =====
 function templateHabitacionInicio(hab) {
@@ -294,13 +574,41 @@ window.mostrarDetalles = (item, tipo) => {
   const modal = document.getElementById('detalle-modal-overlay');
   if (!modal) return;
 
-  document.getElementById('detalle-nombre').textContent = item.nombre || item.NombreHabitacion || item.tipo || 'Sin nombre';
-  document.getElementById('detalle-descripcion').textContent = item.descripcion || item.Descripcion || 'Sin descripción disponible.';
-  document.getElementById('detalle-precio').textContent = `$${Number(item.precio || item.Precio || 0).toLocaleString('es-CO')}`;
+  const nombreElemento = document.getElementById('detalle-nombre');
+  const descripcionElemento = document.getElementById('detalle-descripcion');
+  const precioElemento = document.getElementById('detalle-precio');   // puede ser null en clientes.html
+  const estadoElemento = document.getElementById('detalle-estado');
+
+  if (tipo === 'Cliente') {
+    nombreElemento.textContent = `${item.Nombre || ''} ${item.Apellido || ''}`.trim() || 'Sin nombre';
+    descripcionElemento.innerHTML = `ID: ${item.IDCliente || item.id || 'No informado'}<br>
+      Documento: ${item.NroDocumento || item.Documento || 'No informado'}<br>
+      Nombre: ${item.Nombre || 'No informado'}<br>
+      Apellido: ${item.Apellido || 'No informado'}<br>
+      Dirección: ${item.Direccion || 'No informada'}<br>
+      Correo: ${item.Correo || item.Email || 'No informado'}<br>
+      Teléfono: ${item.Telefono || 'No informado'}<br>
+      Rol: ${item.IDRol || item.Rol || 'No informado'}`;
+    if (precioElemento) precioElemento.textContent = '';
+    if (estadoElemento) {
+      estadoElemento.textContent = `Estado: ${obtenerTextoEstadoCliente(item.Estado ?? 1)}`;
+      estadoElemento.style.display = 'block';
+    }
+  } else {
+    nombreElemento.textContent = item.nombre || item.NombreHabitacion || item.tipo || 'Sin nombre';
+    descripcionElemento.textContent = item.descripcion || item.Descripcion || 'Sin descripción disponible.';
+    if (precioElemento) precioElemento.textContent = `$${Number(item.precio || item.Precio || 0).toLocaleString('es-CO')}`;
+    if (estadoElemento) estadoElemento.style.display = 'none';
+  }
+
   document.getElementById('detalle-categoria').textContent = tipo;
 
+  // ✅ CORRECCIÓN: guarda null — detalle-img no existe en clientes.html
   const imgElement = document.getElementById('detalle-img');
-  imgElement.src = item.imagen || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1000';
+  if (imgElement) {
+    imgElement.src = item.imagen || item.ImagenCabana ||
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1000';
+  }
 
   const extraDiv = document.getElementById('detalle-extra');
   if (extraDiv) {
@@ -458,6 +766,14 @@ async function iniciarPagina() {
     tipoModuloActual = 'servicios';
     configurarEventosServicios();
     await cargarDatos(serviciosAPI);
+  } else if (path.includes('clientes')) {
+    tipoModuloActual = 'clientes';
+    configurarEventosClientes();
+    await cargarDatos(clientesAPI);
+  } else if (path.includes('cabanas')) {
+    tipoModuloActual = 'cabanas';
+    configurarEventosCabanas();
+    await cargarDatos(cabanasAPI);
   } else {
     // ✅ PÁGINA DE INICIO
     await iniciarInicio();
@@ -707,6 +1023,213 @@ window.eliminarServicio = async (id) => {
     cargarDatos(serviciosAPI);
   }
 };
+
+// ===== CLIENTES =====
+function configurarEventosClientes() {
+  const camposCli = [
+    { campoId: 'nroDocumento', errorId: 'error-nroDocumento' },
+    { campoId: 'nombre', errorId: 'error-nombre' },
+    { campoId: 'apellido', errorId: 'error-apellido' },
+    { campoId: 'correo', errorId: 'error-correo' },
+    { campoId: 'telefono', errorId: 'error-telefono' }
+  ];
+
+  const btnNuevo = document.getElementById('btnNuevoCliente');
+  if (btnNuevo) btnNuevo.addEventListener('click', () => {
+    document.getElementById('form-clientes').reset();
+    document.getElementById('id').value = '';
+    document.getElementById('estadoCliente').value = 1;
+    limpiarTodosLosErrores(camposCli);
+    document.getElementById('clientes-form-title').textContent = '➕ Nuevo Cliente';
+    document.getElementById('modal-clientes').classList.add('activo');
+  });
+
+  const btnCerrar = document.getElementById('btnCerrarModalCliente');
+  if (btnCerrar) btnCerrar.addEventListener('click', () => {
+    document.getElementById('modal-clientes').classList.remove('activo');
+  });
+
+  const btnLimpiar = document.getElementById('btnLimpiarCliente');
+  if (btnLimpiar) btnLimpiar.addEventListener('click', () => {
+    document.getElementById('form-clientes').reset();
+    document.getElementById('id').value = '';
+    document.getElementById('estadoCliente').value = 1;
+    limpiarTodosLosErrores(camposCli);
+    document.getElementById('modal-clientes').classList.remove('activo');
+  });
+
+  const busq = document.getElementById('buscador-clientes');
+  if (busq) busq.addEventListener('input', (e) => {
+    const texto = e.target.value.toLowerCase();
+    datosFiltrados = datosOriginales.filter(cliente =>
+      (`${cliente.Nombre || ''} ${cliente.Apellido || ''}`.toLowerCase().includes(texto) ||
+      (cliente.NroDocumento || '').toLowerCase().includes(texto) ||
+      (cliente.Correo || '').toLowerCase().includes(texto))
+    );
+    paginaActual = 1;
+    renderizarPagina();
+  });
+
+  const formCli = document.getElementById('form-clientes');
+  if (formCli) formCli.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('id').value;
+    const data = {
+      NroDocumento: document.getElementById('nroDocumento').value.trim(),
+      Nombre: document.getElementById('nombre').value.trim(),
+      Apellido: document.getElementById('apellido').value.trim(),
+      Direccion: document.getElementById('direccion').value.trim(),
+      Correo: document.getElementById('correo').value.trim(),
+      Telefono: document.getElementById('telefono').value.trim(),
+      Estado: Number(document.getElementById('estadoCliente').value || 1)
+    };
+
+    try {
+      if (id) {
+        await clientesAPI.update(id, data);
+      } else {
+        await clientesAPI.create(data);
+      }
+      document.getElementById('modal-clientes').classList.remove('activo');
+      cargarDatos(clientesAPI);
+    } catch (error) {
+      console.error('Error guardando cliente:', error);
+    }
+  });
+}
+
+window.editarCliente = (id, documento, nombre, apellido, direccion, correo, telefono, estado = 1) => {
+  document.getElementById('id').value = id;
+  document.getElementById('nroDocumento').value = documento;
+  document.getElementById('nombre').value = nombre;
+  document.getElementById('apellido').value = apellido;
+  document.getElementById('direccion').value = direccion;
+  document.getElementById('correo').value = correo;
+  document.getElementById('telefono').value = telefono;
+  document.getElementById('estadoCliente').value = Number(estado);
+  document.getElementById('clientes-form-title').textContent = '✏️ Editar Cliente';
+  document.getElementById('modal-clientes').classList.add('activo');
+};
+
+window.eliminarCliente = async (id) => {
+  if (!confirm('¿Eliminar este cliente?')) return;
+  await clientesAPI.delete(id);
+  cargarDatos(clientesAPI);
+};
+
+window.toggleEstadoCliente = async (id, estadoActual) => {
+  const nuevoEstado = estadoActual === 1 || estadoActual === '1' || estadoActual === true ? 0 : 1;
+  try {
+    await clientesAPI.updateEstado(id, { Estado: nuevoEstado });
+    cargarDatos(clientesAPI);
+  } catch (error) {
+    console.error('Error actualizando estado de cliente:', error);
+  }
+};
+
+// ===== CABAÑAS =====
+window.toggleEstadoCabana = async (id, estadoActual) => {
+  const nuevoEstado = siguienteEstadoCabana(estadoActual);
+  try {
+    await cabanasAPI.updateEstado(id, { Estado: nuevoEstado });
+    cargarDatos(cabanasAPI);
+  } catch (error) {
+    console.error('Error actualizando estado de cabaña:', error);
+  }
+};
+
+function configurarEventosCabanas() {
+  const camposCab = [
+    { campoId: 'nombreCabana', errorId: 'error-nombreCabana' },
+    { campoId: 'precioNoche', errorId: 'error-precioNoche' }
+  ];
+
+  const btnNueva = document.getElementById('btnNuevaCabana');
+  if (btnNueva) btnNueva.addEventListener('click', () => {
+    document.getElementById('form-cabanas').reset();
+    document.getElementById('cabana-id').value = '';
+    document.getElementById('estadoCabana').value = 1;
+    limpiarTodosLosErrores(camposCab);
+    document.getElementById('cabanas-form-title').textContent = '➕ Nueva Cabaña';
+    document.getElementById('modal-cabanas').classList.add('activo');
+  });
+
+  const btnCerrar = document.getElementById('btnCerrarModalCabana');
+  if (btnCerrar) btnCerrar.addEventListener('click', () => {
+    document.getElementById('modal-cabanas').classList.remove('activo');
+  });
+
+  const btnLimpiar = document.getElementById('btnLimpiarCabana');
+  if (btnLimpiar) btnLimpiar.addEventListener('click', () => {
+    document.getElementById('form-cabanas').reset();
+    document.getElementById('cabana-id').value = '';
+    limpiarTodosLosErrores(camposCab);
+    document.getElementById('modal-cabanas').classList.remove('activo');
+  });
+
+  const busq = document.getElementById('buscador-cabanas');
+  if (busq) busq.addEventListener('input', (e) => {
+    const texto = e.target.value.toLowerCase();
+    datosFiltrados = datosOriginales.filter(cabana =>
+      (cabana.NombreCabana || '').toLowerCase().includes(texto) ||
+      (cabana.Descripcion || '').toLowerCase().includes(texto)
+    );
+    paginaActual = 1;
+    renderizarPagina();
+  });
+
+  const formCab = document.getElementById('form-cabanas');
+  if (formCab) formCab.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('cabana-id').value;
+    const data = {
+      NombreCabana: document.getElementById('nombreCabana').value.trim(),
+      Descripcion: document.getElementById('descripcionCabana').value.trim(),
+      CapacidadPersonas: document.getElementById('capacidadPersonas').value,
+      PrecioNoche: document.getElementById('precioNoche').value,
+      Estado: Number(document.getElementById('estadoCabana').value || 1),
+      ImagenCabana: document.getElementById('imagenCabana').value.trim()
+    };
+
+    try {
+      if (id) {
+        await cabanasAPI.update(id, data);
+      } else {
+        await cabanasAPI.create(data);
+      }
+      document.getElementById('modal-cabanas').classList.remove('activo');
+      cargarDatos(cabanasAPI);
+    } catch (error) {
+      console.error('Error guardando cabaña:', error);
+    }
+  });
+}
+
+window.editarCabana = (id, nombre, descripcion, capacidad, precio, estado, imagen) => {
+  document.getElementById('cabana-id').value = id;
+  document.getElementById('nombreCabana').value = nombre;
+  document.getElementById('descripcionCabana').value = descripcion;
+  document.getElementById('capacidadPersonas').value = capacidad;
+  document.getElementById('precioNoche').value = precio;
+  document.getElementById('estadoCabana').value = estado;
+  document.getElementById('imagenCabana').value = imagen;
+  document.getElementById('cabanas-form-title').textContent = '✏️ Editar Cabaña';
+  document.getElementById('modal-cabanas').classList.add('activo');
+};
+
+window.eliminarCabana = async (id) => {
+  if (!confirm('¿Eliminar esta cabaña?')) return;
+  await cabanasAPI.delete(id);
+  cargarDatos(cabanasAPI);
+};
+
+const btnCerrarVerCabana = document.getElementById('btnCerrarVerCabana');
+if (btnCerrarVerCabana) btnCerrarVerCabana.addEventListener('click', () => {
+  const overlay = document.getElementById('modal-ver-cabana');
+  if (overlay) overlay.classList.remove('activo');
+});
 
 const btnCancel = document.getElementById('btn-cancelar');
 if (btnCancel) btnCancel.addEventListener('click', cerrarModal);

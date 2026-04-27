@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Aura Travel</title>
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div id="header-container"></div>
+  <button class="sidebar__toggle" id="sidebarToggle" aria-label="Abrir menú">☰</button>
+  <div class="sidebar__overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+    <section class="dashboard-section">
+      <div class="container">
+
+        <!-- Encabezado -->
+        <div class="dashboard-header">
+          <div>
+            <h1 class="dashboard-titulo">Panel de Control</h1>
+            <p class="dashboard-subtitulo">Resumen general de Aura Travel</p>
+          </div>
+          <div class="dashboard-fecha" id="dashboard-fecha"></div>
+        </div>
+
+        <!-- Mensaje de error global -->
+        <div id="dashboard-error" class="dashboard-alert" style="display:none;">
+          ⚠️ No se pudo conectar con el servidor. Verifica que el backend esté corriendo en <strong>http://localhost:3001</strong>
+        </div>
+
+        <!-- Tarjetas de resumen -->
+        <div class="stats-grid">
+          <div class="stat-card stat-card--cabanas">
+            <div class="stat-card__icon">🏕️</div>
+            <div class="stat-card__info">
+              <span class="stat-card__numero" id="stat-cabanas">—</span>
+              <span class="stat-card__label">Cabañas</span>
+            </div>
+            <div class="stat-card__sub" id="stat-cabanas-activas">Cargando...</div>
+            <a href="cabanas.html" class="stat-card__link">Ver cabañas →</a>
+          </div>
+
+          <div class="stat-card stat-card--habitaciones">
+            <div class="stat-card__icon">🛏️</div>
+            <div class="stat-card__info">
+              <span class="stat-card__numero" id="stat-habitaciones">—</span>
+              <span class="stat-card__label">Habitaciones</span>
+            </div>
+            <div class="stat-card__sub" id="stat-habitaciones-sub">Cargando...</div>
+            <a href="habitaciones.html" class="stat-card__link">Ver habitaciones →</a>
+          </div>
+
+          <div class="stat-card stat-card--clientes">
+            <div class="stat-card__icon">👥</div>
+            <div class="stat-card__info">
+              <span class="stat-card__numero" id="stat-clientes">—</span>
+              <span class="stat-card__label">Clientes</span>
+            </div>
+            <div class="stat-card__sub" id="stat-clientes-activos">Cargando...</div>
+            <a href="clientes.html" class="stat-card__link">Ver clientes →</a>
+          </div>
+
+          <div class="stat-card stat-card--paquetes">
+            <div class="stat-card__icon">✈️</div>
+            <div class="stat-card__info">
+              <span class="stat-card__numero" id="stat-paquetes">—</span>
+              <span class="stat-card__label">Paquetes</span>
+            </div>
+            <div class="stat-card__sub" id="stat-paquetes-sub">Cargando...</div>
+            <a href="paquetes.html" class="stat-card__link">Ver paquetes →</a>
+          </div>
+
+          <div class="stat-card stat-card--servicios">
+            <div class="stat-card__icon">⭐</div>
+            <div class="stat-card__info">
+              <span class="stat-card__numero" id="stat-servicios">—</span>
+              <span class="stat-card__label">Servicios</span>
+            </div>
+            <div class="stat-card__sub" id="stat-servicios-sub">Cargando...</div>
+            <a href="servicios.html" class="stat-card__link">Ver servicios →</a>
+          </div>
+        </div>
+
+        <!-- ══ GRÁFICAS ══════════════════════════════════════════════════════ -->
+        <div class="dashboard-graficas">
+
+          <!-- Gráfica 1: Estado de cabañas (Dona) -->
+          <div class="dashboard-card grafica-card">
+            <div class="dashboard-card__header">
+              <h2 class="dashboard-card__titulo">🏕️ Estado de cabañas</h2>
+            </div>
+            <div class="grafica-body">
+              <canvas id="grafica-cabanas"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfica 2: Clientes activos vs inactivos (Barras) -->
+          <div class="dashboard-card grafica-card">
+            <div class="dashboard-card__header">
+              <h2 class="dashboard-card__titulo">👥 Clientes</h2>
+            </div>
+            <div class="grafica-body">
+              <canvas id="grafica-clientes"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfica 3: Reservas por estado (Barras horizontales) -->
+          <div class="dashboard-card grafica-card grafica-card--wide">
+            <div class="dashboard-card__header">
+              <h2 class="dashboard-card__titulo">📋 Reservas por estado</h2>
+            </div>
+            <div class="grafica-body">
+              <canvas id="grafica-reservas"></canvas>
+            </div>
+          </div>
+
+        </div>
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+        <!-- Fila inferior: tablas recientes -->
+        <div class="dashboard-bottom">
+
+          <!-- Cabañas recientes -->
+          <div class="dashboard-card">
+            <div class="dashboard-card__header">
+              <h2 class="dashboard-card__titulo">🏕️ Cabañas recientes</h2>
+              <a href="cabanas.html" class="dashboard-card__ver-todo">Ver todas</a>
+            </div>
+            <div class="table-wrapper" id="tabla-cabanas-recientes">
+              <p class="dashboard-loading">Cargando...</p>
+            </div>
+          </div>
+
+          <!-- Clientes recientes -->
+          <div class="dashboard-card">
+            <div class="dashboard-card__header">
+              <h2 class="dashboard-card__titulo">👥 Clientes recientes</h2>
+              <a href="clientes.html" class="dashboard-card__ver-todo">Ver todos</a>
+            </div>
+            <div class="table-wrapper" id="tabla-clientes-recientes">
+              <p class="dashboard-loading">Cargando...</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Accesos rápidos -->
+        <div class="quick-access">
+          <h2 class="dashboard-card__titulo" style="margin-bottom: 1.2rem;">⚡ Accesos rápidos</h2>
+          <div class="quick-grid">
+            <a href="cabanas.html" class="quick-btn quick-btn--cabanas">
+              <span class="quick-btn__icon">🏕️</span>
+              <span>Gestionar Cabañas</span>
+            </a>
+            <a href="habitaciones.html" class="quick-btn quick-btn--habitaciones">
+              <span class="quick-btn__icon">🛏️</span>
+              <span>Gestionar Habitaciones</span>
+            </a>
+            <a href="clientes.html" class="quick-btn quick-btn--clientes">
+              <span class="quick-btn__icon">👥</span>
+              <span>Gestionar Clientes</span>
+            </a>
+            <a href="paquetes.html" class="quick-btn quick-btn--paquetes">
+              <span class="quick-btn__icon">✈️</span>
+              <span>Gestionar Paquetes</span>
+            </a>
+            <a href="servicios.html" class="quick-btn quick-btn--servicios">
+              <span class="quick-btn__icon">⭐</span>
+              <span>Gestionar Servicios</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div id="footer-container"></div>
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

@@ -22,7 +22,10 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="buscador-clientes" placeholder="Buscar por nombre, documento, correo...">
           </div>
-          <button class="btn-nuevo" id="btnNuevoCliente">➕ Nuevo Cliente</button>
+          <div class="toolbar-right">
+            <div class="paginacion-resumen" id="paginacion-info-clientes">Cargando clientes...</div>
+            <button class="btn-nuevo" id="btnNuevoCliente">➕ Nuevo Cliente</button>
+          </div>
         </div>
 
         <div id="lista"></div>
@@ -41,6 +44,7 @@
       </div>
       <form id="form-clientes" class="modal-form">
         <input type="hidden" id="id">
+        <input type="hidden" id="estadoCliente" value="1">
         <div class="form-group">
           <label>📄 Nro Documento</label>
           <input type="text" id="nroDocumento" placeholder="Número de documento" required>
@@ -70,6 +74,23 @@
           <button type="submit" class="btn-guardar">💾 Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="detalle-modal-overlay" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal" style="max-width: 550px; padding: 0; overflow: hidden; border-radius: 16px; border: none; background: white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+      <div id="detalle-header" style="height: 180px; position: relative; background: #0d0b2e; display: flex; align-items: flex-end; padding: 20px;">
+        <div style="position: relative; z-index: 2;">
+          <span id="detalle-categoria" style="background: rgba(255,255,255,0.9); color: #111827; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Cliente</span>
+          <h3 id="detalle-nombre" style="color: white; font-size: 1.8rem; margin-top: 5px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Nombre</h3>
+        </div>
+        <button id="btn-cerrar-detalle" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.3); border: none; color: white; cursor: pointer; border-radius: 50%; width: 32px; height: 32px; font-size: 20px; display: flex; align-items: center; justify-content: center;">&times;</button>
+      </div>
+      <div style="padding: 24px;">
+        <p id="detalle-descripcion" style="color: #4b5563; line-height: 1.6; margin-bottom: 20px; font-size: 1rem;">Descripción...</p>
+        <p id="detalle-estado" style="color: #111827; font-weight: 700; margin-bottom: 18px; display: none;"></p>
+        <button type="button" id="btn-entendido" class="btn btn-primario" style="width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px;">Cerrar Vista</button>
+      </div>
     </div>
   </div>
 

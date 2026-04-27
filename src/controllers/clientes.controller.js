@@ -2,7 +2,7 @@
  * Controller: Clientes
  */
 
-const { Cliente } = require('../models/models.cliente.js');
+const Cliente = require('../models/models.cliente.js');
 
 const ClientesController = {
 

@@ -22,7 +22,10 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="buscador-cabanas" placeholder="Buscar por nombre, descripción...">
           </div>
-          <button class="btn-nuevo" id="btnNuevaCabana">➕ Nueva Cabaña</button>
+          <div class="toolbar-right">
+            <div class="paginacion-resumen" id="paginacion-info-cabanas">Cargando cabañas...</div>
+            <button class="btn-nuevo" id="btnNuevaCabana">➕ Nueva Cabaña</button>
+          </div>
         </div>
 
         <div id="lista-cabanas"></div>
@@ -57,13 +60,7 @@
           <label>💰 Precio por Noche</label>
           <input type="number" id="precioNoche" placeholder="Precio por noche" step="0.01" required>
         </div>
-        <div class="form-group">
-          <label>📊 Estado</label>
-          <select id="estadoCabana">
-            <option value="1">✅ Disponible</option>
-            <option value="0">❌ No Disponible</option>
-          </select>
-        </div>
+        <input type="hidden" id="estadoCabana" value="1">
         <div class="form-group">
           <label>🖼️ URL de Imagen</label>
           <input type="text" id="imagenCabana" placeholder="https://ejemplo.com/imagen.jpg">
