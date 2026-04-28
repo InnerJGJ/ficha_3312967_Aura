@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/habitacion.Controller');
+const { getAllHabitaciones, createHabitacion, updateHabitacion, deleteHabitacion, getHabitacionById } = require('../controllers/Habitacion.controller.js');
 
-// Línea 6 corregida:
-router.get('/', controller.getHabitaciones); 
-router.post('/', controller.postHabitacion);
-router.put('/:id', controller.putHabitacion);
-router.delete('/:id', controller.deleteHabitacion);
+// Rutas CRUD de habitaciones
+router.get('/', getAllHabitaciones);
+router.get('/:id', getHabitacionById);
+router.post('/', createHabitacion);
+router.put('/:id', updateHabitacion);
+router.delete('/:id', deleteHabitacion);
 
 module.exports = router;

@@ -1,13 +1,5 @@
 const mysql = require('mysql2/promise');
 
-const connection = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'aura_travel',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+const db = require('../config/db.js');
 
-module.exports = connection;
+module.exports = db;

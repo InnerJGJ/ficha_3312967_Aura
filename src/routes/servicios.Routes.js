@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-// 'servicios' en plural y minúscula
-const controller = require('../controllers/servicios.Controller');
+const { getServicios, postServicio, putServicio, deleteServicio } = require('../controllers/servicios.Controller.js');
 
-router.get('/', controller.getServicios);
-router.post('/', controller.postServicio);
-router.put('/:id', controller.putServicio);
-router.delete('/:id', controller.deleteServicio);
+// Rutas CRUD de servicios
+router.get('/', getServicios);
+router.post('/', postServicio);
+router.put('/:id', putServicio);
+router.delete('/:id', deleteServicio);
 
 module.exports = router;

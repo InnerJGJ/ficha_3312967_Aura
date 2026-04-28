@@ -1,4 +1,4 @@
-const db = require('../database/connection');
+const db = require('../database/connection.js');
 
 const getAll = async () => {
     const [rows] = await db.query("SELECT * FROM paquetes");
@@ -51,4 +51,10 @@ const remove = async (id) => {
     await db.query("DELETE FROM paquetes WHERE IDPaquete=?", [id]);
 };
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = {
+    getAll,
+    getById,
+    create,
+    update,
+    remove
+};

@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const db = require('../config/db.js');
 
 const getServicios = async () => {
     const [rows] = await db.query("SELECT * FROM servicios");
@@ -38,4 +38,9 @@ const eliminarServicio = async (id) => {
     await db.query("DELETE FROM servicios WHERE IDServicio=?", [id]);
 };
 
-module.exports = { getServicios, crearServicio, actualizarServicio, eliminarServicio };
+module.exports = {
+    getServicios,
+    crearServicio,
+    actualizarServicio,
+    eliminarServicio
+};
