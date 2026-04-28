@@ -4,9 +4,9 @@ const path = require('path');
 const app = express();
 
 // Importar rutas
-const habitacionRoutes = require('./src/routes/habitacion.routes');
+const habitacionRoutes = require('./src/routes/habitacion.Routes');
 const serviciosRoutes  = require('./src/routes/servicios.Routes');
-const paqueteRoutes    = require('./src/routes/paquete.routes');
+const paqueteRoutes    = require('./src/routes/paquetes.Routes');
 
 // Middleware
 app.use(cors());

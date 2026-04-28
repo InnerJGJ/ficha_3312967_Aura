@@ -48,6 +48,7 @@ const deletePaquete = async (req, res) => {
     }
 };
 
+// Exportación clara y directa
 module.exports = {
     getAllPaquetes,
     getPaqueteById,
