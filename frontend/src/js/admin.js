@@ -1,8 +1,8 @@
 // Verificar sesión y rol
 const userData = localStorage.getItem('user');
-if (!userData) window.location.href = '/page/index.html';
+if (!userData) window.location.href = '/src/pages/login.html';
 const user = JSON.parse(userData);
-if (user.IDRol !== 2) window.location.href = '/page/reservas.html';
+if (user.IDRol !== 2) window.location.href = '/src/pages/reservas.html';
 
 const adminName = document.getElementById('adminName');
 const newItemBtn = document.getElementById('newItemBtn');
@@ -17,7 +17,7 @@ const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('user');
-        window.location.href = '/page/index.html';
+        window.location.href = '/src/pages/login.html';
     });
 }
 

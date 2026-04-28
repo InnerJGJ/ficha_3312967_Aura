@@ -1,30 +1,27 @@
 // Verificar sesión
 const userData = localStorage.getItem('user');
-if (!userData) window.location.href = '/page/index.html';
-const user = JSON.parse(userData);
-
-document.getElementById('userName').textContent = `Hola, ${user.NombreUsuario}`;
-
-// Sidebar toggle
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
-
-if (sidebarToggle && sidebar) {
-    sidebarToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('open');
-    });
-
-    document.addEventListener('click', (event) => {
-        if (window.innerWidth <= 1080 && !sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-            sidebar.classList.remove('open');
-        }
-    });
+if (!userData) window.location.href = '/src/pages/login.html';
+const user = JSON.parse(userData || '{}');
+if (!user.IDUsuario) {
+  localStorage.removeItem('user');
+  window.location.href = '/src/pages/login.html';
 }
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('user');
-    window.location.href = '/page/index.html';
+// Set user name and logout after components are loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait a bit for components to load
+  setTimeout(() => {
+    const userNameEl = document.getElementById('userName');
+    if (userNameEl) userNameEl.textContent = `Hola, ${user.NombreUsuario}`;
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('user');
+        window.location.href = '/src/pages/login.html';
+      });
+    }
+  }, 100);
 });
 
 let habitacionesData = [];
@@ -69,7 +66,11 @@ async function cargarMetodosPagoModal() {
     const metodos = await response.json();
     const select = document.getElementById('editMetodoPago');
     select.innerHTML = '<option value="">Seleccione método de pago</option>';
-    metodos.forEach(m => {
+    const metodosPermitidos = metodos.filter(m => {
+        const nombre = (m.NomMetodoPago || '').toLowerCase();
+        return nombre.includes('efectivo') || nombre.includes('transferencia');
+    });
+    metodosPermitidos.forEach(m => {
         const option = document.createElement('option');
         option.value = m.IdMetodoPago;
         option.textContent = m.NomMetodoPago;

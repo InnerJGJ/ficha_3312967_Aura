@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 const getAll = async () => {
   try {
-    const [results] = await db.query('SELECT * FROM estadosreserva');
+    const [results] = await db.query('SELECT * FROM usuarios');
     return results;
   } catch (error) {
     throw error;

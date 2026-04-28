@@ -17,7 +17,8 @@ const login = async (req, res, next) => {
     res.status(200).json({ message: 'Login exitoso', user });
 
   } catch (error) {
-    next(error);
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error al procesar el login' });
   }
 };
 
@@ -34,7 +35,8 @@ const register = async (req, res, next) => {
     res.status(201).json({ message: 'Usuario registrado exitosamente' });
 
   } catch (error) {
-    next(error);
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Error al registrar el usuario' });
   }
 };
 

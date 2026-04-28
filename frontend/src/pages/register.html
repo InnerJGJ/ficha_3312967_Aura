@@ -1,67 +1,88 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proyecto Hospedaje - Registro</title>
-    <link rel="stylesheet" href="../css/reserva.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro - Aura Travel</title>
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/styles.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Aura Travel</h1>
-        </header>
-        <main>
-            <form id="registerForm" class="form">
-                <h2>Registrarse</h2>
-                <div class="form-group">
-                    <label for="NombreUsuario">Nombre de Usuario:</label>
-                    <input type="text" id="NombreUsuario" required>
-                </div>
-                <div class="form-group">
-                    <label for="Apellido">Apellido:</label>
-                    <input type="text" id="Apellido" required>
-                </div>
-                <div class="form-group">
-                    <label for="Email">Email:</label>
-                    <input type="email" id="Email" required>
-                </div>
-                <div class="form-group">
-                    <label for="Contrasena">Contraseña:</label>
-                    <input type="password" id="Contrasena" required>
-                </div>
-                <div class="form-group">
-                    <label for="ConfirmarContrasena">Confirmar Contraseña:</label>
-                    <input type="password" id="ConfirmarContrasena" required>
-                </div>
-                <div class="form-group">
-                    <label for="TipoDocumento">Tipo de Documento:</label>
-                    <input type="text" id="TipoDocumento" required>
-                </div>
-                <div class="form-group">
-                    <label for="NumeroDocumento">Número de Documento:</label>
-                    <input type="text" id="NumeroDocumento" required>
-                </div>
-                <div class="form-group">
-                    <label for="Telefono">Teléfono:</label>
-                    <input type="text" id="Telefono" required>
-                </div>
-                <div class="form-group">
-                    <label for="Pais">País:</label>
-                    <input type="text" id="Pais" required>
-                </div>
-                <div class="form-group">
-                    <label for="Direccion">Dirección:</label>
-                    <input type="text" id="Direccion" required>
-                </div>
-                <button type="submit" class="btn">Registrarse</button>
-                <p id="errorMessage" class="error"></p>
-                <p style="text-align:center; margin-top: 2rem; color: var(--gris);">
-                    ¿Ya tienes cuenta? <a href="/page/index.html" style="color: var(--turquesa); text-decoration: none;">Inicia sesión</a>
-                </p>
-            </form>
-        </main>
-    </div>
-    <script src="../js/register.js"></script>
+
+  <div id="header-container"></div>
+
+  <button class="sidebar__toggle" id="sidebarToggle" aria-label="Abrir menú">☰</button>
+
+  <div class="sidebar__overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+
+    <section class="seccion">
+      <div class="container">
+        <div class="auth-layout" style="min-height: 80vh; padding: 2rem 0;">
+          <form id="registerForm" class="form form-auth" style="max-width: 500px; width: 100%;">
+            <h2>Registrarse</h2>
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+              <div class="form-group">
+                <label for="NombreUsuario">Nombre de Usuario:</label>
+                <input type="text" id="NombreUsuario" required>
+              </div>
+              <div class="form-group">
+                <label for="Apellido">Apellido:</label>
+                <input type="text" id="Apellido" required>
+              </div>
+              <div class="form-group">
+                <label for="Email">Email:</label>
+                <input type="email" id="Email" required>
+              </div>
+              <div class="form-group">
+                <label for="Contrasena">Contraseña:</label>
+                <input type="password" id="Contrasena" required>
+              </div>
+              <div class="form-group">
+                <label for="ConfirmarContrasena">Confirmar Contraseña:</label>
+                <input type="password" id="ConfirmarContrasena" required>
+              </div>
+              <div class="form-group">
+                <label for="TipoDocumento">Tipo de Documento:</label>
+                <input type="text" id="TipoDocumento" required>
+              </div>
+              <div class="form-group">
+                <label for="NumeroDocumento">Número de Documento:</label>
+                <input type="text" id="NumeroDocumento" required>
+              </div>
+              <div class="form-group">
+                <label for="Telefono">Teléfono:</label>
+                <input type="text" id="Telefono" required>
+              </div>
+              <div class="form-group">
+                <label for="Pais">País:</label>
+                <input type="text" id="Pais" required>
+              </div>
+              <div class="form-group">
+                <label for="Direccion">Dirección:</label>
+                <input type="text" id="Direccion" required>
+              </div>
+            </div>
+            <button type="submit" class="btn" style="margin-top: 1.5rem;">Registrarse</button>
+            <p id="errorMessage" class="error" style="color: var(--color-error); text-align: center; margin-top: 1rem;"></p>
+            <p style="text-align: center; margin-top: 2rem; color: var(--color-texto-claro); font-size: 0.95rem;">
+              ¿Ya tienes cuenta? <a href="/src/pages/login.html" style="color: var(--color-secundario); text-decoration: none; font-weight: 600;">Inicia sesión</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div id="footer-container"></div>
+
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/register.js"></script>
+
 </body>
 </html>

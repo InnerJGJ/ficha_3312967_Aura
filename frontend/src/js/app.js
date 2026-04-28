@@ -9,7 +9,12 @@ let tipoModuloActual = '';
 async function cargarComponentes() {
   try {
     const base = window.location.pathname.includes('/pages/') ? '../' : 'src/';
-    const headerRes = await fetch(`${base}components/header.html`);
+    const isClientPage = window.location.pathname.includes('reservas.html') || window.location.pathname.includes('nueva-reserva.html');
+    const isPublicPage = window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html');
+    let headerFile = 'header.html';
+    if (isClientPage) headerFile = 'client-header.html';
+    else if (isPublicPage) headerFile = 'public-header.html';
+    const headerRes = await fetch(`${base}components/${headerFile}`);
     const headerHTML = await headerRes.text();
     document.getElementById('header-container').innerHTML = headerHTML;
 

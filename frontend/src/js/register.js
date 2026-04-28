@@ -4,7 +4,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const contrasena = document.getElementById('Contrasena').value;
     const confirmarContrasena = document.getElementById('ConfirmarContrasena').value;
 
-    // Validar que las contraseñas coincidan
     if (contrasena !== confirmarContrasena) {
         document.getElementById('errorMessage').textContent = 'Las contraseñas no coinciden';
         return;
@@ -31,7 +30,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
         if (response.ok) {
             alert('Usuario registrado exitosamente');
-            window.location.href = '/page/index.html';
+            window.location.href = '/src/pages/login.html';
         } else {
             const error = await response.json();
             document.getElementById('errorMessage').textContent = error.message || 'Error al registrarse';

@@ -4,17 +4,17 @@ const API_URL = 'http://localhost:3001';
 // ===== HABITACIONES =====
 const habitacionesAPI = {
   getAll: async () => {
-    const res = await fetch(`${API_URL}/habitaciones`);
+    const res = await fetch(`${API_URL}/api/habitaciones`);
     return res.json();
   },
 
   getById: async (id) => {
-    const res = await fetch(`${API_URL}/habitaciones/${id}`);
+    const res = await fetch(`${API_URL}/api/habitaciones/${id}`);
     return res.json();
   },
 
   create: async (data) => {
-    const res = await fetch(`${API_URL}/habitaciones`, {
+    const res = await fetch(`${API_URL}/api/habitaciones`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -23,7 +23,7 @@ const habitacionesAPI = {
   },
 
   update: async (id, data) => {
-    const res = await fetch(`${API_URL}/habitaciones/${id}`, {
+    const res = await fetch(`${API_URL}/api/habitaciones/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -32,7 +32,7 @@ const habitacionesAPI = {
   },
 
   delete: async (id) => {
-    const res = await fetch(`${API_URL}/habitaciones/${id}`, {
+    const res = await fetch(`${API_URL}/api/habitaciones/${id}`, {
       method: 'DELETE'
     });
     return res.json();
@@ -42,17 +42,17 @@ const habitacionesAPI = {
 // ===== PAQUETES =====
 const paquetesAPI = {
   getAll: async () => {
-    const res = await fetch(`${API_URL}/paquetes`);
+    const res = await fetch(`${API_URL}/api/paquetes`);
     return res.json();
   },
 
   getById: async (id) => {
-    const res = await fetch(`${API_URL}/paquetes/${id}`);
+    const res = await fetch(`${API_URL}/api/paquetes/${id}`);
     return res.json();
   },
 
   create: async (data) => {
-    const res = await fetch(`${API_URL}/paquetes`, {
+    const res = await fetch(`${API_URL}/api/paquetes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -61,7 +61,7 @@ const paquetesAPI = {
   },
 
   update: async (id, data) => {
-    const res = await fetch(`${API_URL}/paquetes/${id}`, {
+    const res = await fetch(`${API_URL}/api/paquetes/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -70,7 +70,7 @@ const paquetesAPI = {
   },
 
   delete: async (id) => {
-    const res = await fetch(`${API_URL}/paquetes/${id}`, {
+    const res = await fetch(`${API_URL}/api/paquetes/${id}`, {
       method: 'DELETE'
     });
     return res.json();
