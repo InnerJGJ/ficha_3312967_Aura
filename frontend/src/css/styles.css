@@ -319,6 +319,7 @@ img { max-width: 100%; display: block; }
   background: linear-gradient(135deg, #e0f7ff 0%, #f0e6ff 100%);
 }
 
+<<<<<<< HEAD
 .section-toolbar {
   display: flex;
   align-items: center;
@@ -646,6 +647,8 @@ img { max-width: 100%; display: block; }
   }
 }
 
+=======
+>>>>>>> Diego
 .seccion__titulo {
   font-family: var(--fuente-principal);
   font-size: 2.2rem;
@@ -779,6 +782,7 @@ img { max-width: 100%; display: block; }
   color: #fff;
 }
 
+<<<<<<< HEAD
 .btn-morado {
   background: linear-gradient(135deg, #a855f7, #7c3aed);
   color: #fff;
@@ -789,11 +793,14 @@ img { max-width: 100%; display: block; }
   color: #fff;
 }
 
+=======
+>>>>>>> Diego
 .btn-peligro {
   background: linear-gradient(135deg, #ff7675, var(--color-error));
   color: var(--color-blanco);
 }
 
+<<<<<<< HEAD
 .btn-verde {
   background: linear-gradient(135deg, #34d399, #10b981);
   color: var(--color-blanco);
@@ -847,6 +854,13 @@ img { max-width: 100%; display: block; }
 .form-group, .form-grupo { margin-bottom: var(--espaciado-md); }
 
 .form-group label,
+=======
+.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+/* ===== FORMULARIOS ===== */
+.form-grupo { margin-bottom: var(--espaciado-md); }
+
+>>>>>>> Diego
 .form-grupo label {
   display: block;
   margin-bottom: 6px;
@@ -855,9 +869,12 @@ img { max-width: 100%; display: block; }
   font-size: 0.88rem;
 }
 
+<<<<<<< HEAD
 .form-group input,
 .form-group select,
 .form-group textarea,
+=======
+>>>>>>> Diego
 .form-grupo input,
 .form-grupo select,
 .form-grupo textarea {
@@ -873,9 +890,12 @@ img { max-width: 100%; display: block; }
   outline: none;
 }
 
+<<<<<<< HEAD
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus,
+=======
+>>>>>>> Diego
 .form-grupo input:focus,
 .form-grupo select:focus,
 .form-grupo textarea:focus {
@@ -912,16 +932,22 @@ img { max-width: 100%; display: block; }
   display: block;
 }
 
+<<<<<<< HEAD
 .form-group input.input-error,
 .form-group textarea.input-error,
+=======
+>>>>>>> Diego
 .form-grupo input.input-error,
 .form-grupo textarea.input-error {
   border-color: var(--color-error);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+<<<<<<< HEAD
 .form-group input.input-ok,
 .form-group textarea.input-ok,
+=======
+>>>>>>> Diego
 .form-grupo input.input-ok,
 .form-grupo textarea.input-ok {
   border-color: var(--color-exito);
@@ -930,6 +956,7 @@ img { max-width: 100%; display: block; }
 
 /* ===== MODAL GENERAL ===== */
 .modal-overlay {
+<<<<<<< HEAD
   display: none;
   position: fixed;
   inset: 0;
@@ -950,6 +977,76 @@ img { max-width: 100%; display: block; }
   max-width: 520px;
   max-height: min(90vh, 800px);
   overflow-y: auto;
+=======
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(13, 11, 46, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-overlay[style*="display:none"] { display: none; }
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 26px;
+  padding: 2rem;
+  max-width: 860px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.22);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(123, 47, 247, 0.45) rgba(255, 255, 255, 0.08);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(123, 47, 247, 0.34);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(123, 47, 247, 0.55);
+}
+
+#editModal .form {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 1.75rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+#editModal .form-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Legacy modal styles for compatibility */
+.modal {
+  background: var(--color-blanco);
+  border-radius: 16px;
+  padding: var(--espaciado-lg);
+  width: 90%;
+  max-width: 500px;
+>>>>>>> Diego
   box-shadow: 0 20px 60px rgba(123, 47, 247, 0.3);
   border: 1px solid rgba(0, 212, 255, 0.15);
   animation: modalEntrada 0.3s ease;
@@ -1089,6 +1186,657 @@ img { max-width: 100%; display: block; }
   box-shadow: 0 4px 12px rgba(123, 47, 247, 0.3);
 }
 
+<<<<<<< HEAD
+=======
+/* ===== FORMULARIOS ===== */
+.form-panel {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.form-card {
+  background: rgba(123, 47, 247, 0.06);
+  border: 1.5px solid rgba(123, 47, 247, 0.45);
+  border-radius: 22px;
+  padding: 1.1rem;
+  box-shadow: 0 12px 30px rgba(123, 47, 247, 0.12);
+  margin-bottom: 1rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.page-formularios {
+  font-size: 0.92rem;
+}
+
+.page-formularios .seccion {
+  padding: 1rem 0;
+}
+
+.page-formularios .seccion__titulo {
+  font-size: 1.35rem;
+}
+
+.page-formularios .seccion__subtitulo {
+  font-size: 0.88rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.7rem;
+}
+
+.page-formularios .container {
+  max-width: 820px;
+}
+
+.page-formularios .form-panel {
+  max-width: 820px;
+  gap: 0.7rem;
+  justify-content: center;
+}
+
+.page-formularios .form {
+  padding: 0.9rem;
+  max-width: 720px;
+}
+
+.page-formularios .form-card {
+  padding: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.page-formularios .form-card__header {
+  font-size: 0.82rem;
+  margin-bottom: 0.55rem;
+}
+
+.page-formularios .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.page-formularios .form-group label {
+  font-size: 0.72rem;
+}
+
+.page-formularios .form-group select,
+.page-formularios .form-group input {
+  padding: 0.7rem 0.8rem;
+  font-size: 0.84rem;
+}
+
+.page-formularios .resumen {
+  padding: 0.9rem;
+  flex: 0 0 210px;
+  max-width: 210px;
+}
+
+.page-formularios .resumen h3 {
+  font-size: 0.92rem;
+  margin-bottom: 0.7rem;
+}
+
+.page-formularios .resumen p {
+  font-size: 0.82rem;
+  margin-bottom: 0.35rem;
+}
+
+.page-formularios .resumen .total-row {
+  padding-top: 0.45rem;
+}
+
+.page-formularios .actions-row {
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.page-formularios .reservation {
+  padding: 1rem;
+}
+
+.page-formularios .reservation div p {
+  font-size: 0.84rem;
+}
+
+.page-formularios .reservation div p strong {
+  font-size: 0.96rem;
+}
+
+.page-formularios .reservation-card {
+  padding: 1.2rem;
+}
+
+.page-formularios .reservation-details {
+  padding: 1.2rem;
+}
+
+.page-formularios .details-header h3 {
+  font-size: 1.45rem;
+}
+
+.page-formularios .details-services h4 {
+  font-size: 1rem;
+}
+
+.page-formularios .details-services li {
+  padding: 0.75rem;
+}
+
+.page-formularios .reservation-info h3 {
+  font-size: 1.2rem;
+}
+
+.page-formularios .reservation-info p {
+  font-size: 0.88rem;
+}
+
+.page-formularios .reservation-actions .btn {
+  font-size: 0.86rem;
+  padding: 0.55rem 1rem;
+}
+
+.form-card:hover {
+  background: rgba(123, 47, 247, 0.12);
+  border-color: rgba(123, 47, 247, 0.7);
+  box-shadow: 0 18px 45px rgba(123, 47, 247, 0.2), 0 0 0 1px rgba(123, 47, 247, 0.15);
+  transform: translateY(-2px);
+}
+
+.form-card__header {
+  font-family: var(--fuente-principal);
+  font-size: 0.98rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-secundario);
+  margin-bottom: 0.95rem;
+}
+
+.servicios-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.form {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(24px);
+  border: 2px solid rgba(123, 47, 247, 0.35);
+  border-radius: 24px;
+  padding: 1.6rem;
+  margin: 0 auto;
+  max-width: 880px;
+  width: 100%;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(123, 47, 247, 0.12);
+  position: relative;
+}
+
+.form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(123, 47, 247, 0.45), rgba(0, 212, 255, 0.28));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.form h2 {
+  font-family: var(--fuente-principal);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--color-secundario);
+  margin-bottom: 2.5rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+.form-panel .form {
+  max-width: 100%;
+  margin: 0;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(123, 47, 247, 0.2);
+  border: 2px solid rgba(123, 47, 247, 0.25);
+  position: relative;
+}
+
+.form-panel .form::before {
+  background: linear-gradient(135deg, rgba(123, 47, 247, 0.3), rgba(0, 212, 255, 0.2));
+}
+
+.form-wide {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  min-width: 0;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-texto-claro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-group select,
+.form-group input {
+  min-width: 0;
+  width: 100%;
+  padding: 0.95rem 1.1rem;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  font-family: var(--fuente-secundaria);
+  font-size: 0.95rem;
+  color: var(--color-texto);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: rgba(123, 47, 247, 0.9);
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 0 0 4px rgba(123, 47, 247, 0.12);
+}
+
+select option {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* Servicios */
+#serviciosContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+#serviciosContainer label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  margin-bottom: 0;
+  cursor: pointer;
+  text-transform: none;
+  font-size: 0.85rem;
+  color: var(--color-texto);
+  transition: all 0.2s ease;
+}
+
+#serviciosContainer label:hover {
+  background: rgba(123, 47, 247, 0.08);
+  border-color: rgba(123, 47, 247, 0.4);
+}
+
+.servicio-item {
+  position: relative;
+}
+
+.servicio-tooltip {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(100%, 280px);
+  background: rgba(15, 8, 35, 0.96);
+  border: 1px solid rgba(123, 47, 247, 0.45);
+  border-radius: 16px;
+  padding: 0.95rem;
+  box-shadow: 0 14px 30px rgba(123, 47, 247, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  z-index: 10;
+}
+
+.servicio-item:hover .servicio-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.servicio-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 22px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid rgba(123, 47, 247, 0.45);
+}
+
+.servicio-desc {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #f5f2ff;
+  margin-bottom: 0.75rem;
+}
+
+.servicio-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.82rem;
+}
+
+.servicio-meta span {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+}
+
+.servicio-tooltip {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  width: max(240px, calc(100% + 1rem));
+  background: rgba(15, 8, 35, 0.96);
+  border: 1px solid rgba(123, 47, 247, 0.45);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 18px 35px rgba(123, 47, 247, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  z-index: 10;
+}
+
+.servicio-item:hover .servicio-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.servicio-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 24px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid rgba(123, 47, 247, 0.45);
+}
+
+.servicio-desc {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #f5f2ff;
+  margin-bottom: 0.85rem;
+}
+
+.servicio-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+}
+
+.servicio-meta span {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+}
+
+/* Resumen */
+.resumen {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(123, 47, 247, 0.25);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(123, 47, 247, 0.1);
+  position: relative;
+}
+
+.resumen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(123, 47, 247, 0.3), rgba(0, 212, 255, 0.2));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.resumen h3 {
+  font-family: var(--fuente-principal);
+  font-size: 1.2rem;
+  color: var(--color-secundario);
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.resumen p {
+  margin-bottom: 0.5rem;
+  color: var(--color-texto);
+  position: relative;
+  z-index: 1;
+}
+
+.total-row {
+  border-top: 1px solid rgba(123, 47, 247, 0.3);
+  padding-top: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+  font-weight: 600;
+}
+
+.auth-layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem 0;
+}
+
+.form-auth {
+  max-width: 450px;
+  width: 100%;
+}
+
+/* Actions */
+.actions-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.actions-row .btn {
+  flex: 1;
+}
+
+/* ===== RESERVATIONS ===== */
+.reservation {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(123, 47, 247, 0.15);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.reservation:hover {
+  border-color: rgba(123, 47, 247, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra);
+}
+
+.reservation div p {
+  font-size: 0.9rem;
+  color: var(--color-texto-claro);
+  margin-bottom: 0.3rem;
+}
+
+.reservation div p strong {
+  color: var(--color-texto);
+  font-size: 1rem;
+}
+
+.reservation-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(123, 47, 247, 0.15);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+}
+
+.reservation-card:hover {
+  background: rgba(123, 47, 247, 0.08);
+  border-color: rgba(123, 47, 247, 0.3);
+  transform: translateY(-2px);
+}
+
+.reservation-details {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(123, 47, 247, 0.18);
+  border-radius: 24px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.reservation-details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.details-header h3 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.details-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.details-grid p {
+  margin: 0.5rem 0;
+  color: var(--color-texto);
+}
+
+.details-services h4 {
+  margin: 0 0 1rem;
+  color: var(--color-secundario);
+  font-size: 1.1rem;
+}
+
+.details-services ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.details-services li {
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(123, 47, 247, 0.16);
+  border-radius: 14px;
+  color: var(--color-texto-claro);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.reservation-info h3 {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-texto);
+}
+
+.reservation-info p {
+  color: var(--color-texto-claro);
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.reservation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.reservation-actions .btn {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+}
+
+>>>>>>> Diego
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .sidebar {

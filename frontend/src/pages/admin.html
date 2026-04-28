@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/reserva.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <title>Panel Administrador - Aura Travel</title>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <h2>Aura Travel</h2>
+                <p>Panel Administrador</p>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="reservas">Reservas</button>
+                <button class="nav-item" data-section="habitaciones">Habitaciones</button>
+                <button class="nav-item" data-section="usuarios">Usuarios</button>
+                <button class="nav-item" data-section="clientes">Clientes</button>
+                <button class="nav-item" data-section="paquetes">Paquetes</button>
+                <button class="nav-item" data-section="servicios">Servicios</button>
+            </nav>
+            <button id="logoutBtn" class="btn-logout">Cerrar Sesión</button>
+        </aside>
+
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-title">
+                    <p class="eyebrow">Sistema de Reservas</p>
+                    <h1 id="sectionTitle">Gestión de Reservas</h1>
+                    <p class="admin-welcome" id="adminName"></p>
+                </div>
+                <div class="header-actions">
+                    <div class="search-group">
+                        <span class="search-icon">🔍</span>
+                        <input id="searchInput" type="search" placeholder="Buscar reservas, clientes..." />
+                    </div>
+                    <button id="newItemBtn" class="btn btn-primary">+ Nueva habitación</button>
+                </div>
+            </header>
+
+            <!-- RESERVAS -->
+            <section id="section-reservas" class="admin-section active">
+                <div id="reservasList"></div>
+            </section>
+
+            <!-- HABITACIONES -->
+            <section id="section-habitaciones" class="admin-section">
+                <div class="cards-grid" id="habitacionesGrid"></div>
+            </section>
+
+            <!-- USUARIOS -->
+            <section id="section-usuarios" class="admin-section">
+                <div id="usuariosList"></div>
+            </section>
+
+            <!-- CLIENTES -->
+            <section id="section-clientes" class="admin-section">
+                <div id="clientesList"></div>
+            </section>
+
+            <!-- PAQUETES -->
+            <section id="section-paquetes" class="admin-section">
+                <div id="paquetesList"></div>
+            </section>
+
+            <!-- SERVICIOS -->
+            <section id="section-servicios" class="admin-section">
+                <div id="serviciosList"></div>
+            </section>
+        </main>
+    </div>
+    <script src="../js/admin.js"></script>
+</body>
+</html>
