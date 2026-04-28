@@ -36,3 +36,16 @@ exports.deleteHabitacion = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getHabitacionById = async (req, res) => {
+    try {
+        const habitacion = await habitacionModel.obtenerHabitacionPorId(req.params.id);
+        if (habitacion) {
+            res.json(habitacion);
+        } else {
+            res.status(404).json({ error: 'Habitación no encontrada' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

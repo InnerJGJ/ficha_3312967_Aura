@@ -2,7 +2,7 @@ const db = require('../config/db'); // Esto usa tu conexión de MySQL
 
 exports.obtenerHabitaciones = async () => {
     try {
-        const [rows] = await db.query("SELECT * FROM habitaciones");
+        const [rows] = await db.query("SELECT * FROM habitacion ORDER BY NombreHabitacion ASC");
         return rows;
     } catch (error) {
         throw error;
@@ -10,11 +10,11 @@ exports.obtenerHabitaciones = async () => {
 };
 
 exports.crearHabitacion = async (habitacion) => {
-    const { nombre, precio, descripcion, imagen } = habitacion;
+    const { NombreHabitacion, precio, descripcion, imagen } = habitacion;
     try {
         const [result] = await db.query(
-            "INSERT INTO habitaciones (nombre, precio, descripcion, imagen) VALUES (?, ?, ?, ?)",
-            [nombre, precio, descripcion, imagen]
+            "INSERT INTO habitacion (NombreHabitacion, Costo, Descripcion, imagen) VALUES (?, ?, ?, ?)",
+            [NombreHabitacion, precio, descripcion, imagen]
         );
         return result;
     } catch (error) {
@@ -23,11 +23,11 @@ exports.crearHabitacion = async (habitacion) => {
 };
 
 exports.actualizarHabitacion = async (id, habitacion) => {
-    const { nombre, precio, descripcion, imagen } = habitacion;
+    const { NombreHabitacion, precio, descripcion, imagen } = habitacion;
     try {
         const [result] = await db.query(
-            "UPDATE habitaciones SET nombre=?, precio=?, descripcion=?, imagen=? WHERE id=?",
-            [nombre, precio, descripcion, imagen, id]
+            "UPDATE habitacion SET NombreHabitacion=?, Costo=?, Descripcion=?, imagen=? WHERE IDHabitacion=?",
+            [NombreHabitacion, precio, descripcion, imagen, id]
         );
         return result;
     } catch (error) {
@@ -37,8 +37,17 @@ exports.actualizarHabitacion = async (id, habitacion) => {
 
 exports.eliminarHabitacion = async (id) => {
     try {
-        const [result] = await db.query("DELETE FROM habitaciones WHERE id=?", [id]);
+        const [result] = await db.query("DELETE FROM habitacion WHERE IDHabitacion=?", [id]);
         return result;
+    } catch (error) {
+        throw error;
+    }
+};
+
+exports.obtenerHabitacionPorId = async (id) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM habitacion WHERE IDHabitacion=?", [id]);
+        return rows[0];
     } catch (error) {
         throw error;
     }
