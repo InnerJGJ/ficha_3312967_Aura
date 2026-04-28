@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-<<<<<<< HEAD
 require('dotenv').config();
 
 const app = express();
@@ -12,24 +11,15 @@ const serviciosRoutes = require('./src/routes/servicios.Routes.js');
 const paqueteRoutes = require('./src/routes/paquete.routes.js');
 const clientesRoutes = require('./src/routes/clientes.routes.js');
 const cabanaRoutes = require('./src/routes/cabanas.routes.js');
-=======
-const app = express();
-
-// Importar rutas
-const habitacionRoutes     = require('./src/routes/habitacion.routes');
-const serviciosRoutes      = require('./src/routes/servicios.Routes');
-const paqueteRoutes        = require('./src/routes/paquete.routes');
-const authRoutes           = require('./src/routes/auth.routes');
-const reservationRoutes    = require('./src/routes/reservation.routes');
-const metodoPagoRoutes     = require('./src/routes/metodopago.routes');
+const authRoutes = require('./src/routes/auth.routes');
+const reservationRoutes = require('./src/routes/reservation.routes');
+const metodoPagoRoutes = require('./src/routes/metodopago.routes');
 const estadosReservaRoutes = require('./src/routes/estadosreserva.routes');
-const usuariosRoutes       = require('./src/routes/usuarios.routes');
->>>>>>> Diego
+const usuariosRoutes = require('./src/routes/usuarios.routes');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-<<<<<<< HEAD
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/cabanas', cabanaRoutes);
 
@@ -65,7 +55,6 @@ const startServer = async () => {
 };
 
 startServer();
-=======
 
 // Rutas API (ANTES de archivos estáticos)
 app.use('/api/habitaciones', habitacionRoutes);
@@ -93,4 +82,3 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
->>>>>>> Diego
