@@ -6,6 +6,7 @@
   <title>Aura Travel — Experiencias Exclusivas en Medellín</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     :root {
       --c-dark:    #0a0818;
@@ -392,7 +393,27 @@
     }
     .service-card:hover::before { opacity: 1; }
     .service-card:hover { border-color: rgba(0,212,255,0.2); transform: translateY(-4px); }
-    .service-icon { font-size: 2rem; margin-bottom: 20px; display: block; }
+    .service-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.service-icon i {
+  font-size: 26px;
+  color: #d4af37;
+}
+
+.service-card:hover .service-icon {
+  border-color: var(--c-cyan);
+  transform: scale(1.1);
+}
     .service-name { font-family: var(--ff-serif); font-size: 1.3rem; font-weight: 400; margin-bottom: 12px; }
     .service-desc { font-size: 0.82rem; font-weight: 300; color: rgba(255,255,255,0.45); line-height: 1.8; }
     .service-line {
@@ -711,7 +732,7 @@
   <div class="rooms-grid reveal">
 
     <div class="room-card">
-      <img src="https://images.unsplash.com/photo-1501117716987-c8e2a2a5ee44?auto=format&fit=crop&w=800&q=80"/>
+      <img src="https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=800&q=80"/>
       <div class="room-card-overlay">
         <span class="room-tag">Romántico</span>
         <div class="room-name">Escapada en Pareja</div>
@@ -742,47 +763,63 @@
 
 
   <!-- ── SERVICIOS (sin Concierge & Traslados) ── -->
-  <section id="servicios">
-    <div class="services-section">
-      <div class="services-header">
-        <div class="section-tag reveal">Lo que ofrecemos</div>
-        <h2 class="section-title reveal reveal-delay-1">Servicios <em>Premium</em></h2>
-      </div>
-      <div class="services-grid">
-        <div class="service-card reveal">
-          <span class="service-icon">🍽️</span>
-          <div class="service-name">Restaurante de Autor</div>
-          <p class="service-desc">Cocina de fusión colombiana con ingredientes de temporada y maridaje exclusivo.</p>
-          <div class="service-line"></div>
-        </div>
-        <div class="service-card reveal reveal-delay-1">
-          <span class="service-icon">💆</span>
-          <div class="service-name">Spa &amp; Bienestar</div>
-          <p class="service-desc">Rituales ancestrales y tratamientos modernos para la renovación total del cuerpo y mente.</p>
-          <div class="service-line"></div>
-        </div>
-        <div class="service-card reveal reveal-delay-2">
-          <span class="service-icon">🏊</span>
-          <div class="service-name">Piscina Infinita</div>
-          <p class="service-desc">Vista panorámica de Medellín desde nuestra piscina exterior con temperatura controlada.</p>
-          <div class="service-line"></div>
-        </div>
-        <div class="service-card reveal reveal-delay-1">
-          <span class="service-icon">🎭</span>
-          <div class="service-name">Experiencias Culturales</div>
-          <p class="service-desc">Tours guiados, visitas a museos y experiencias auténticas de la cultura paisa.</p>
-          <div class="service-line"></div>
-        </div>
-        <div class="service-card reveal reveal-delay-2">
-          <span class="service-icon">🏋️</span>
-          <div class="service-name">Fitness &amp; Yoga</div>
-          <p class="service-desc">Gimnasio equipado y clases de yoga al amanecer con vista a la montaña.</p>
-          <div class="service-line"></div>
-        </div>
-      </div>
+ <section id="servicios">
+  <div class="services-section">
+    <div class="services-header">
+      <div class="section-tag reveal">Lo que ofrecemos</div>
+      <h2 class="section-title reveal reveal-delay-1">Servicios <em>Premium</em></h2>
     </div>
-  </section>
 
+    <div class="services-grid">
+
+      <div class="service-card reveal">
+        <div class="service-icon">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <div class="service-name">Restaurante de Autor</div>
+        <p class="service-desc">Cocina de fusión colombiana con ingredientes de temporada y maridaje exclusivo.</p>
+        <div class="service-line"></div>
+      </div>
+
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon">
+          <i class="fas fa-spa"></i>
+        </div>
+        <div class="service-name">Spa &amp; Bienestar</div>
+        <p class="service-desc">Rituales ancestrales y tratamientos modernos para la renovación total del cuerpo y mente.</p>
+        <div class="service-line"></div>
+      </div>
+
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon">
+          <i class="fas fa-water"></i>
+        </div>
+        <div class="service-name">Piscina Infinita</div>
+        <p class="service-desc">Vista panorámica de Medellín desde nuestra piscina exterior con temperatura controlada.</p>
+        <div class="service-line"></div>
+      </div>
+
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon">
+          <i class="fas fa-landmark"></i>
+        </div>
+        <div class="service-name">Experiencias Culturales</div>
+        <p class="service-desc">Tours guiados, visitas a museos y experiencias auténticas de la cultura paisa.</p>
+        <div class="service-line"></div>
+      </div>
+
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="service-name">Fitness &amp; Yoga</div>
+        <p class="service-desc">Gimnasio equipado y clases de yoga al amanecer con vista a la montaña.</p>
+        <div class="service-line"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
   <!-- ── TESTIMONIOS ── -->
   <section id="experiencias" class="testimonials-section">
     <div class="testimonials-inner">
