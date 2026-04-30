@@ -1,8 +1,8 @@
-const paqueteService = require('../services/paquete.service');
+const { getAll, getById, create, update, remove } = require('../services/paquete.service.js');
 
 const getAllPaquetes = async (req, res) => {
     try {
-        const paquetes = await paqueteService.getAll();
+        const paquetes = await getAll();
         res.json(paquetes);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -11,7 +11,7 @@ const getAllPaquetes = async (req, res) => {
 
 const getPaqueteById = async (req, res) => {
     try {
-        const paquete = await paqueteService.getById(req.params.id);
+        const paquete = await getById(req.params.id);
         res.json(paquete);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -20,7 +20,7 @@ const getPaqueteById = async (req, res) => {
 
 const createPaquete = async (req, res) => {
     try {
-        const paquete = await paqueteService.create(req.body);
+        const paquete = await create(req.body);
         res.status(201).json(paquete);
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
@@ -32,7 +32,7 @@ const createPaquete = async (req, res) => {
 
 const updatePaquete = async (req, res) => {
     try {
-        const paquete = await paqueteService.update(req.params.id, req.body);
+        const paquete = await update(req.params.id, req.body);
         res.json(paquete);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -41,14 +41,13 @@ const updatePaquete = async (req, res) => {
 
 const deletePaquete = async (req, res) => {
     try {
-        await paqueteService.remove(req.params.id);
+        await remove(req.params.id);
         res.json({ message: "Paquete eliminado correctamente" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Exportación clara y directa
 module.exports = {
     getAllPaquetes,
     getPaqueteById,

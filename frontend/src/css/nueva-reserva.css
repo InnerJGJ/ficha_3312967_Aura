@@ -1,0 +1,415 @@
+/* ================================================
+   NUEVA RESERVA — Layout horizontal profesional
+   Usa variables de variables.css y styles.css
+   ================================================ */
+
+/* Wrapper general de la página */
+.nr-wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 2rem 2rem 3rem;
+}
+
+/* Encabezado */
+.nr-header {
+  margin-bottom: 1.75rem;
+}
+
+.nr-titulo {
+  font-family: var(--fuente-principal);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primario);
+  margin-bottom: 0.25rem;
+}
+
+.nr-subtitulo {
+  color: var(--color-texto-claro);
+  font-size: 0.95rem;
+}
+
+/* -----------------------------------------------
+   LAYOUT: formulario (izq) + resumen (der)
+   ----------------------------------------------- */
+.nr-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* -----------------------------------------------
+   FORMULARIO
+   ----------------------------------------------- */
+.nr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* -----------------------------------------------
+   CARDS
+   ----------------------------------------------- */
+.nr-card {
+  background: var(--color-blanco);
+  border: 1.5px solid rgba(123, 47, 247, 0.18);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: var(--sombra);
+  transition: var(--transicion);
+}
+
+.nr-card:hover {
+  border-color: rgba(123, 47, 247, 0.38);
+  box-shadow: var(--sombra-hover);
+}
+
+.nr-card__titulo {
+  font-family: var(--fuente-principal);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-secundario);
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(123, 47, 247, 0.1);
+}
+
+/* -----------------------------------------------
+   GRIDS INTERNOS
+   ----------------------------------------------- */
+
+/* Habitación | Paquete | Método de pago */
+.nr-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Servicios | Fechas */
+.nr-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* -----------------------------------------------
+   CAMPOS
+   ----------------------------------------------- */
+.nr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nr-field--mt {
+  margin-top: 1rem;
+}
+
+.nr-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-texto-claro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nr-field select,
+.nr-field input[type="date"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--color-blanco);
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--radio-borde);
+  font-family: var(--fuente-secundaria);
+  font-size: 0.92rem;
+  color: var(--color-texto);
+  transition: var(--transicion);
+  box-sizing: border-box;
+  outline: none;
+}
+
+.nr-field select:focus,
+.nr-field input[type="date"]:focus {
+  border-color: var(--color-secundario);
+  box-shadow: 0 0 0 3px rgba(123, 47, 247, 0.1);
+}
+
+.nr-field select option {
+  background: var(--color-blanco);
+  color: var(--color-texto);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* Detalle card (habitación/paquete seleccionado) */
+.nr-detalle {
+  margin-top: 0.6rem;
+  background: linear-gradient(135deg, rgba(123,47,247,0.05), rgba(0,212,255,0.04));
+  border: 1px solid rgba(123, 47, 247, 0.2);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  font-size: 0.84rem;
+  color: var(--color-texto);
+  animation: nrFadeUp 0.25s ease forwards;
+}
+
+.nr-detalle h4 {
+  font-family: var(--fuente-principal);
+  font-size: 1rem;
+  color: var(--color-primario);
+  margin-bottom: 0.4rem;
+}
+
+.nr-detalle p {
+  color: var(--color-texto-claro);
+  font-size: 0.82rem;
+  margin-bottom: 0.25rem;
+}
+
+.nr-detalle .precio-tag {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, var(--color-secundario), var(--color-acento));
+  color: var(--color-blanco);
+  padding: 0.25rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* -----------------------------------------------
+   SERVICIOS
+   ----------------------------------------------- */
+#serviciosContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.servicio-item {
+  position: relative;
+}
+
+.servicio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--color-fondo);
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transicion);
+}
+
+.servicio-label:hover {
+  background: rgba(123, 47, 247, 0.05);
+  border-color: rgba(123, 47, 247, 0.35);
+}
+
+.servicio-check {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-secundario);
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.servicio-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.servicio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.servicio-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.servicio-price {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-secundario);
+  white-space: nowrap;
+}
+
+.servicio-summary {
+  font-size: 0.74rem;
+  color: var(--color-texto-claro);
+  line-height: 1.3;
+}
+
+.servicio-details {
+  display: none;
+}
+
+.servicio-item.active .servicio-label {
+  background: rgba(123, 47, 247, 0.07);
+  border-color: rgba(123, 47, 247, 0.4);
+}
+
+/* -----------------------------------------------
+   MENSAJE DE DISPONIBILIDAD
+   ----------------------------------------------- */
+.nr-aviso {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--color-secundario);
+  line-height: 1.4;
+}
+
+/* -----------------------------------------------
+   ACCIONES
+   ----------------------------------------------- */
+.nr-actions {
+  display: flex;
+  gap: 0.85rem;
+}
+
+.nr-actions .btn {
+  padding: 0.8rem 2rem;
+  font-size: 0.88rem;
+  border-radius: 8px;
+}
+
+.nr-btn-cancelar {
+  background: transparent;
+  border: 1.5px solid rgba(123, 47, 247, 0.35);
+  color: var(--color-secundario);
+  font-family: var(--fuente-secundaria);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.88rem;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transicion);
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.nr-btn-cancelar:hover {
+  background: rgba(123, 47, 247, 0.07);
+  border-color: rgba(123, 47, 247, 0.6);
+}
+
+/* -----------------------------------------------
+   RESUMEN DE PAGO
+   ----------------------------------------------- */
+.nr-resumen {
+  position: sticky;
+  top: 1.5rem;
+  background: var(--color-blanco);
+  border: 1.5px solid rgba(123, 47, 247, 0.22);
+  border-radius: 16px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: var(--sombra);
+}
+
+.nr-resumen__titulo {
+  font-family: var(--fuente-principal);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primario);
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(123, 47, 247, 0.1);
+}
+
+.nr-resumen__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--color-texto-claro);
+  margin-bottom: 0.5rem;
+}
+
+.nr-resumen__fila span:last-child {
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.nr-resumen__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1.5px solid rgba(123, 47, 247, 0.2);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primario);
+}
+
+.nr-resumen__total span:last-child {
+  color: var(--color-secundario);
+  font-size: 1.15rem;
+}
+
+/* -----------------------------------------------
+   ANIMACIÓN
+   ----------------------------------------------- */
+@keyframes nrFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* -----------------------------------------------
+   RESPONSIVE
+   ----------------------------------------------- */
+@media (max-width: 1100px) {
+  .nr-layout {
+    grid-template-columns: 1fr;
+  }
+  .nr-resumen {
+    position: static;
+    order: -1;
+  }
+  .nr-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .nr-wrapper {
+    padding: 1.25rem 1rem 2rem;
+  }
+  .nr-grid-3,
+  .nr-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  #serviciosContainer {
+    grid-template-columns: 1fr;
+  }
+  .nr-actions {
+    flex-direction: column;
+  }
+  .nr-actions .btn,
+  .nr-btn-cancelar {
+    width: 100%;
+    justify-content: center;
+  }
+}

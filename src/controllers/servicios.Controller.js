@@ -1,17 +1,17 @@
-const serviciosModel = require('../models/servicios.Models');
+const { obtenerServicios, crearServicio, actualizarServicio, eliminarServicio } = require('../models/servicios.Models.js');
 
-exports.getServicios = async (req, res) => {
+const getServicios = async (req, res) => {
     try {
-        const servicios = await serviciosModel.obtenerServicios();
+        const servicios = await obtenerServicios();
         res.json(servicios);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-exports.postServicio = async (req, res) => {
+const postServicio = async (req, res) => {
     try {
-        const resultado = await serviciosModel.crearServicio(req.body);
+        const resultado = await crearServicio(req.body);
         res.json(resultado);
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
@@ -21,22 +21,29 @@ exports.postServicio = async (req, res) => {
     }
 };
 
-exports.putServicio = async (req, res) => {
+const putServicio = async (req, res) => {
     try {
         const id = req.params.id;
-        const resultado = await serviciosModel.actualizarServicio(id, req.body);
+        const resultado = await actualizarServicio(id, req.body);
         res.json(resultado);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-exports.deleteServicio = async (req, res) => {
+const deleteServicio = async (req, res) => {
     try {
         const id = req.params.id;
-        const resultado = await serviciosModel.eliminarServicio(id);
+        const resultado = await eliminarServicio(id);
         res.json(resultado);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+};
+
+module.exports = {
+    getServicios,
+    postServicio,
+    putServicio,
+    deleteServicio
 };
