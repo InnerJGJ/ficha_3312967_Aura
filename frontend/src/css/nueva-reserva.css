@@ -81,6 +81,10 @@
   overflow: visible;
   z-index: 2;
 }
+.nr-card--cliente {
+  overflow: visible;
+  z-index: 3;
+}
 
 .nr-card__titulo {
   font-family: var(--fuente-principal);
