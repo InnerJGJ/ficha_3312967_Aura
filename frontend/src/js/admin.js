@@ -959,6 +959,7 @@ window.eliminarReserva = async (id) => {
             document.getElementById('cancelReasonErr').style.display    = 'none';
             const modal = document.getElementById('cancelReasonModal');
             modal.style.display = 'flex';
+            modal.classList.add('activo');
         } else {
             // Reserva ya cancelada → confirmar eliminación física
             mostrarConfirmacion(
@@ -977,7 +978,9 @@ window.eliminarReserva = async (id) => {
 };
 
 window.cerrarModalMotivo = () => {
-    document.getElementById('cancelReasonModal').style.display = 'none';
+    const modal = document.getElementById('cancelReasonModal');
+    modal.style.display = 'none';
+    modal.classList.remove('activo');
     _cancelReservaId   = null;
     _cancelReservaMode = 'viaEliminar';
 };
@@ -990,7 +993,9 @@ window.abrirCancelacionEstado = (id) => {
     document.getElementById('cancelReasonSubtitle').textContent = 'El cliente recibirá un correo con el motivo de la cancelación.';
     document.getElementById('cancelReasonText').value           = '';
     document.getElementById('cancelReasonErr').style.display    = 'none';
-    document.getElementById('cancelReasonModal').style.display  = 'flex';
+    const modal = document.getElementById('cancelReasonModal');
+    modal.style.display = 'flex';
+    modal.classList.add('activo');
 };
 
 window.confirmarCancelacionConMotivo = async () => {
