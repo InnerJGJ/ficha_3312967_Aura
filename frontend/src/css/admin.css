@@ -1817,8 +1817,8 @@ body:has(.admin-layout) {
 }
 
 .reservas-kpi {
-  background: #ffffff;
-  border: 1px solid rgba(49, 130, 206, 0.15);
+  background: #EAF3FC;
+  border: 1px solid rgba(49, 130, 206, 0.18);
   border-radius: 20px;
   padding: 1.4rem 1.5rem;
   display: flex;
@@ -1830,8 +1830,8 @@ body:has(.admin-layout) {
 
 .reservas-kpi:hover {
   transform: translateY(-2px);
-  border-color: rgba(49, 130, 206, 0.3);
-  background: #f8fbff;
+  border-color: rgba(49, 130, 206, 0.35);
+  background: #DDEBFA;
 }
 
 .reservas-kpi--pendiente  { border-color: rgba(245, 158, 11, 0.35); }
