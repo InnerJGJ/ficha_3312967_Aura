@@ -1817,21 +1817,21 @@ body:has(.admin-layout) {
 }
 
 .reservas-kpi {
-  background: #EAF3FC;
-  border: 1px solid rgba(49, 130, 206, 0.18);
+  background: #F3EEFC;
+  border: 1px solid rgba(123, 82, 171, 0.25);
   border-radius: 20px;
   padding: 1.4rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  box-shadow: 0 4px 16px rgba(49, 130, 206, 0.08);
+  box-shadow: 0 4px 16px rgba(123, 82, 171, 0.1);
   transition: var(--transicion);
 }
 
 .reservas-kpi:hover {
   transform: translateY(-2px);
-  border-color: rgba(49, 130, 206, 0.35);
-  background: #DDEBFA;
+  border-color: rgba(123, 82, 171, 0.45);
+  background: #EAE0FB;
 }
 
 .reservas-kpi--pendiente  { border-color: rgba(245, 158, 11, 0.35); }
