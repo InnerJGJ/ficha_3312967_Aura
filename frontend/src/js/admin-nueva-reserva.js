@@ -347,36 +347,8 @@ function limpiarCliente() {
     inp.focus();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const inp = document.getElementById('buscarDocumento');
-    const resultsEl = document.getElementById('docSearchResults');
-    if (!inp) return;
-
-    inp.addEventListener('input', function() {
-        const q = this.value.trim();
-        if (q.length < 2) { resultsEl.style.display = 'none'; return; }
-        const matches = clientesCache.filter(c =>
-            c.NumeroDocumento && c.NumeroDocumento.toLowerCase().includes(q.toLowerCase())
-        );
-        if (matches.length === 0) {
-            resultsEl.innerHTML = '<div class="nr-doc-result-item"><span class="nr-doc-result-item__name">No se encontró ningún cliente con ese documento.</span></div>';
-        } else {
-            resultsEl.innerHTML = matches.map(c => `
-                <div class="nr-doc-result-item" onclick="seleccionarCliente(${c.IDUsuario})">
-                    <div class="nr-doc-result-item__name">${c.NombreUsuario} ${c.Apellido}</div>
-                    <div class="nr-doc-result-item__doc">${c.TipoDocumento || 'Doc'}: ${c.NumeroDocumento} &bull; ${c.Email}</div>
-                </div>
-            `).join('');
-        }
-        resultsEl.style.display = 'block';
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.nr-doc-search')) {
-            resultsEl.style.display = 'none';
-        }
-    });
-});
+// Nota: el listener de búsqueda de cliente se registra dentro de init()
+// porque el script está al final del <body> — DOMContentLoaded ya disparó.
 
 async function cargarHabitaciones() {
     try {
@@ -800,31 +772,45 @@ function cerrarModal() {
    CALCULAR TOTAL
 ────────────────────────────────────────────────── */
 function calcularTotal() {
-    const noches=actualizarContadorNoches();
-    const animate=(elId,newVal)=>{ const el=document.getElementById(elId); if(!el)return; el.style.transition='opacity 0.15s'; el.style.opacity='0'; setTimeout(()=>{ el.textContent=`$${formatCurrency(newVal)}`; el.style.opacity='1'; },120); };
-    if (noches<=0){ animate('subtotal',0); animate('iva',0); animate('total',0); actualizarDesglose(); actualizarSubtotalServicios(); return; }
-    let precioAloj=0;
-    const hSel=document.getElementById('IDHabitacion');
-    const cSel=document.getElementById('IDCabana');
-    const pSel=document.getElementById('IDPaquete');
-    // Solo un tipo de alojamiento a la vez — prioridad: Habitación > Cabaña > Paquete
-    if (hSel.value){
-        const h=habitacionesData.find(h=>String(h.IDHabitacion)===String(hSel.value));
-        if(h) precioAloj=parseFloat(h.Costo||h.precio||0)*noches;
-    } else if (cSel.value){
-        const c=cabanasData.find(c=>String(c.IDCabana)===String(cSel.value));
-        if(c) precioAloj=parseFloat(c.PrecioNoche||0)*noches;
-    } else if (pSel.value){
-        const p=paquetesData.find(p=>String(p.IDPaquete)===String(pSel.value));
-        if(p) precioAloj=parseFloat(p.Precio||p.precio||0)*noches;
+    const noches = actualizarContadorNoches();
+    const animate = (elId, newVal) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.style.transition = 'opacity 0.15s';
+        el.style.opacity = '0';
+        setTimeout(() => { el.textContent = `$${formatCurrency(newVal)}`; el.style.opacity = '1'; }, 120);
+    };
+
+    // Alojamiento — solo se multiplica si hay noches (si no hay fechas = $0, pero servicios sí suman)
+    let precioAloj = 0;
+    if (noches > 0) {
+        const hSel = document.getElementById('IDHabitacion');
+        const cSel = document.getElementById('IDCabana');
+        const pSel = document.getElementById('IDPaquete');
+        if (hSel.value) {
+            const h = habitacionesData.find(h => String(h.IDHabitacion) === String(hSel.value));
+            if (h) precioAloj = parseFloat(h.Costo || h.precio || 0) * noches;
+        } else if (cSel.value) {
+            const c = cabanasData.find(c => String(c.IDCabana) === String(cSel.value));
+            if (c) precioAloj = parseFloat(c.PrecioNoche || 0) * noches;
+        } else if (pSel.value) {
+            const p = paquetesData.find(p => String(p.IDPaquete) === String(pSel.value));
+            if (p) precioAloj = parseFloat(p.Precio || p.precio || 0) * noches;
+        }
     }
-    const totalServ=Array.from(document.querySelectorAll('.servicio-check:checked')).reduce((sum,s)=>sum+(parseFloat(s.dataset.costo)*getServicioQuantity(s.value)),0);
-    const sub_total=precioAloj+totalServ;
-    const sub=Math.round((sub_total / 1.19)*100)/100;
-    const iva=Math.round((sub_total - sub)*100)/100;
-    const total=sub_total;
-    animate('subtotal',sub); animate('iva',iva); animate('total',total);
-    actualizarDesglose(); actualizarSubtotalServicios();
+
+    // Servicios — siempre se calculan aunque no haya fechas aún
+    const totalServ = Array.from(document.querySelectorAll('.servicio-check:checked'))
+        .reduce((sum, s) => sum + (parseFloat(s.dataset.costo) * getServicioQuantity(s.value)), 0);
+
+    const sub_total = precioAloj + totalServ;
+    const sub  = Math.round((sub_total / 1.19) * 100) / 100;
+    const iva  = Math.round((sub_total - sub) * 100) / 100;
+    animate('subtotal', sub);
+    animate('iva', iva);
+    animate('total', sub_total);
+    actualizarDesglose();
+    actualizarSubtotalServicios();
 }
 
 /* ──────────────────────────────────────────────────
@@ -1034,4 +1020,38 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
 
     actualizarContadorNoches();
     calcularTotal();
+
+    // Búsqueda de cliente por documento — autocomplete instantáneo
+    const inp = document.getElementById('buscarDocumento');
+    const resultsEl = document.getElementById('docSearchResults');
+    if (inp && resultsEl) {
+        inp.addEventListener('input', function() {
+            const q = this.value.trim();
+            if (q.length < 2) { resultsEl.style.display = 'none'; return; }
+            const matches = clientesCache.filter(c =>
+                c.NumeroDocumento && c.NumeroDocumento.includes(q)
+            );
+            if (matches.length === 0) {
+                resultsEl.innerHTML = `<div class="nr-doc-result-item">
+                    <span class="nr-doc-result-item__name" style="color:rgba(26,43,74,0.5);">
+                        No se encontró ningún cliente con ese documento.
+                    </span>
+                </div>`;
+            } else {
+                resultsEl.innerHTML = matches.map(c => `
+                    <div class="nr-doc-result-item" onclick="seleccionarCliente(${c.IDUsuario})">
+                        <div class="nr-doc-result-item__name">${c.NombreUsuario || ''} ${c.Apellido || ''}</div>
+                        <div class="nr-doc-result-item__doc">${c.TipoDocumento || 'Doc'}: ${c.NumeroDocumento} · ${c.Email || ''}</div>
+                    </div>
+                `).join('');
+            }
+            resultsEl.style.display = 'block';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nr-doc-search')) {
+                resultsEl.style.display = 'none';
+            }
+        });
+    }
 })();
