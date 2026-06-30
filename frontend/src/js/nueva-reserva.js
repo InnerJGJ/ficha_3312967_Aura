@@ -1279,7 +1279,8 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
         FechaInicio: document.getElementById('FechaInicio').value,
         FechaFinalizacion: document.getElementById('FechaFinalizacion').value,
         MetodoPago: metodoPagoVal ? parseInt(metodoPagoVal) : null,
-        UsuarioIdusuario: user.IDUsuario
+        UsuarioIdusuario: user.IDUsuario,
+        CantidadHuespedes: parseInt(document.getElementById('CantidadHuespedes')?.value) || 1
     };
 
     try {

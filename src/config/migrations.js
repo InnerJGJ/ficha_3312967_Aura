@@ -23,6 +23,9 @@ const runMigrations = async () => {
     // Recordatorio de check-in: evita reenviar el correo en cada corrida del cron
     await addColumnIfMissing('reserva', 'RecordatorioEnviado', 'TINYINT(1) NOT NULL DEFAULT 0');
 
+    // Cantidad de huéspedes para los que es la reserva
+    await addColumnIfMissing('reserva', 'CantidadHuespedes', 'INT NOT NULL DEFAULT 1');
+
     // Regla 8: historial de cambios de estado en reservas
     await db.query(`
       CREATE TABLE IF NOT EXISTS reserva_historial (

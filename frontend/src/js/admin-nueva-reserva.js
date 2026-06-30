@@ -963,7 +963,8 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
         FechaInicio:        document.getElementById('FechaInicio').value,
         FechaFinalizacion:  document.getElementById('FechaFinalizacion').value,
         MetodoPago:         metodoPagoVal ? parseInt(metodoPagoVal) : null,
-        UsuarioIdusuario:   parseInt(clienteId)
+        UsuarioIdusuario:   parseInt(clienteId),
+        CantidadHuespedes:  parseInt(document.getElementById('CantidadHuespedes')?.value) || 1
     };
 
     const submitBtn = document.querySelector('.nr-btn-confirmar');

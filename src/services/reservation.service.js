@@ -462,7 +462,8 @@ const createReservation = async (data) => {
       MontoTotal: totals.total,
       MetodoPago: data.MetodoPago || null,
       IdEstadoReserva: data.IdEstadoReserva || 1,
-      UsuarioIdusuario: data.UsuarioIdusuario || null
+      UsuarioIdusuario: data.UsuarioIdusuario || null,
+      CantidadHuespedes: Number(data.CantidadHuespedes) > 0 ? Number(data.CantidadHuespedes) : 1
     };
 
     const [result] = await connection.query('INSERT INTO reserva SET ?', reservaData);
@@ -562,6 +563,7 @@ const updateReservation = async (id, data) => {
     if (data.FechaFinalizacion) reservaData.FechaFinalizacion = data.FechaFinalizacion;
     if (data.MetodoPago) reservaData.MetodoPago = data.MetodoPago;
     if (data.IdEstadoReserva) reservaData.IdEstadoReserva = data.IdEstadoReserva;
+    if (Number(data.CantidadHuespedes) > 0) reservaData.CantidadHuespedes = Number(data.CantidadHuespedes);
     
     // Totales siempre se actualizan si es un update completo
     reservaData.SubTotal = totals.subtotal;
