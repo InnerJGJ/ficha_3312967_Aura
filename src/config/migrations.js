@@ -20,6 +20,9 @@ const runMigrations = async () => {
     // Regla 10: verificación de email para permitir reservas
     await addColumnIfMissing('usuarios', 'EmailVerificado', 'TINYINT(1) NOT NULL DEFAULT 1');
 
+    // Recordatorio de check-in: evita reenviar el correo en cada corrida del cron
+    await addColumnIfMissing('reserva', 'RecordatorioEnviado', 'TINYINT(1) NOT NULL DEFAULT 0');
+
     // Regla 8: historial de cambios de estado en reservas
     await db.query(`
       CREATE TABLE IF NOT EXISTS reserva_historial (
