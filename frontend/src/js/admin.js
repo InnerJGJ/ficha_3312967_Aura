@@ -360,12 +360,6 @@ function renderReservas(reservas, kpis) {
                     <div class="reserva-card__header" style="border-left: 4px solid ${cfg.color};">
                         <div class="reserva-card__id-wrap">
                             <span class="reserva-card__id">#${r.IdReserva}</span>
-                            <span class="reserva-card__badge" style="color:${cfg.color}; background:${cfg.bg}; border:1px solid ${cfg.border};">
-                                <i data-lucide="${cfg.icon}" style="width:12px; height:12px;"></i>
-                                ${r.NombreEstadoReserva}
-                            </span>
-                            ${esCompletada ? '<span class="reserva-card__historial-tag">🔒 Historial</span>' : ''}
-                            ${esCancelada  ? '<span class="reserva-card__historial-tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">✕ Cancelada</span>' : ''}
                         </div>
                         <div class="reserva-card__select-wrap" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                             <select
