@@ -533,8 +533,8 @@ const updateReservation = async (id, data) => {
     const [check] = await connection.query('SELECT IdEstadoReserva FROM reserva WHERE IdReserva = ?', [id]);
     if (check.length && check[0].IdEstadoReserva === ESTADO_COMPLETADO) {
       await connection.rollback();
-      const err = new Error('No se pueden modificar reservas completadas. Esta reserva forma parte del historial.');
-      err.statusCode = 400;
+      const err = new Error('No se puede modificar una reserva completada.');
+      err.statusCode = 403;
       throw err;
     }
 

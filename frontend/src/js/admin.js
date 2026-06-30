@@ -8,6 +8,16 @@ function ordenarEstados(lista) {
     });
 }
 
+// Espejo de TRANSICIONES_VALIDAS en reservation.service.js — solo para habilitar/deshabilitar
+// opciones del <select> de la card; la validación real ocurre siempre en el backend.
+const TRANSICIONES_VALIDAS_FRONT = {
+    1: [2, 3], // Pendiente   -> Confirmada, Cancelada
+    2: [5, 3], // Confirmada  -> En Proceso, Cancelada
+    5: [4],    // En Proceso  -> Completada
+    3: [],     // Cancelada   -> terminal
+    4: [],     // Completada  -> terminal
+};
+
 // Verificar sesión y rol
 const userData = localStorage.getItem('user');
 if (!userData) window.location.href = '/src/pages/login.html';
@@ -341,15 +351,9 @@ function renderReservas(reservas, kpis) {
                             : `<span style="color:#ef4444; font-size:0.75rem;">✓ Finalizada hace ${Math.abs(dias)} días</span>`
                     : '';
 
-                // Acciones disponibles según flujo unidireccional de estados
-                const accionesEstado = {
-                    1: [{ id: 2, label: 'Confirmar',   icon: 'check-circle-2', color: '#10b981' },
-                        { id: 3, label: 'Cancelar',    icon: 'x-circle',       color: '#ef4444', esCancelacion: true }],
-                    2: [{ id: 5, label: 'Iniciar',     icon: 'play-circle',    color: '#0D9488' },
-                        { id: 3, label: 'Cancelar',    icon: 'x-circle',       color: '#ef4444', esCancelacion: true }],
-                    5: [{ id: 4, label: 'Completar',   icon: 'check-circle',   color: '#2B6CB0' }],
-                };
-                const acciones = accionesEstado[r.IdEstadoReserva] || [];
+                // Transiciones válidas desde el estado actual (terminal => sin transiciones => select deshabilitado)
+                const transicionesValidas = TRANSICIONES_VALIDAS_FRONT[r.IdEstadoReserva] || [];
+                const esTerminal = esCompletada || esCancelada;
 
                 return `
                 <div class="reserva-card${esCompletada ? ' reserva-card--completada' : ''}" data-estado="${r.NombreEstadoReserva?.toLowerCase()}">
@@ -364,19 +368,19 @@ function renderReservas(reservas, kpis) {
                             ${esCancelada  ? '<span class="reserva-card__historial-tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">✕ Cancelada</span>' : ''}
                         </div>
                         <div class="reserva-card__select-wrap" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                            ${acciones.length === 0
-                                ? ''
-                                : acciones.map(a => `
-                                    <button onclick="${a.esCancelacion
-                                        ? `abrirCancelacionEstado(${r.IdReserva})`
-                                        : `cambiarEstado(${r.IdReserva}, ${a.id})`}"
-                                        style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border:1.5px solid ${a.color}33;background:${a.color}11;color:${a.color};border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
-                                        onmouseover="this.style.background='${a.color}22'" onmouseout="this.style.background='${a.color}11'">
-                                        <i data-lucide="${a.icon}" style="width:11px;height:11px;"></i>
-                                        ${a.label}
-                                    </button>
-                                `).join('')
-                            }
+                            <select
+                                class="reserva-card__estado-select"
+                                data-estado-actual="${r.IdEstadoReserva}"
+                                ${esTerminal ? 'disabled title="Estado final — no se puede modificar"' : ''}
+                                onchange="manejarCambioEstadoCard(${r.IdReserva}, this)"
+                                style="padding:5px 8px;border:1.5px solid ${cfg.color}55;background:${esTerminal ? 'rgba(107,114,128,0.08)' : cfg.bg};color:${esTerminal ? '#6b7280' : cfg.color};border-radius:6px;font-size:0.75rem;font-weight:600;cursor:${esTerminal ? 'not-allowed' : 'pointer'};max-width:150px;">
+                                ${reservasEstados.map(e => {
+                                    const idEst = e.IdEstadoReserva;
+                                    const esActual = idEst === r.IdEstadoReserva;
+                                    const esValida = esActual || transicionesValidas.includes(idEst);
+                                    return `<option value="${idEst}" ${esActual ? 'selected' : ''} ${esValida ? '' : 'disabled'}>${e.NombreEstadoReserva}</option>`;
+                                }).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="reserva-card__body">
@@ -466,7 +470,8 @@ function filtrarReservas(estado, btn) {
     });
 }
 
-async function cambiarEstado(idReserva, idEstado) {
+async function cambiarEstado(idReserva, idEstado, selectEl = null) {
+    const estadoOriginal = selectEl ? selectEl.dataset.estadoActual : null;
     try {
         const response = await fetch(`/api/reservas/${idReserva}/status`, {
             method: 'PATCH',
@@ -479,11 +484,26 @@ async function cambiarEstado(idReserva, idEstado) {
         } else {
             const err = await response.json().catch(() => ({}));
             mostrarNotificacion(err.message || 'Error al cambiar el estado de la reserva.', 'error');
+            if (selectEl && estadoOriginal) selectEl.value = estadoOriginal;
         }
     } catch (error) {
         mostrarNotificacion('Error de conexión al servidor.', 'error');
+        if (selectEl && estadoOriginal) selectEl.value = estadoOriginal;
     }
 }
+
+// Maneja el cambio de estado disparado desde el <select> de la card.
+// Cancelada exige motivo (abre modal); el resto va directo vía cambiarEstado().
+window.manejarCambioEstadoCard = (idReserva, selectEl) => {
+    const nuevoEstado = Number(selectEl.value);
+    const estadoOriginal = selectEl.dataset.estadoActual;
+    if (nuevoEstado === 3) {
+        selectEl.value = estadoOriginal; // revertir visualmente; se refleja al recargar tras confirmar el motivo
+        abrirCancelacionEstado(idReserva);
+        return;
+    }
+    cambiarEstado(idReserva, nuevoEstado, selectEl);
+};
 
 // ===== CRUD DE RESERVAS =====
 window.verDetalleReserva = async (id) => {

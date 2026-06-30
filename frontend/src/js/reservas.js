@@ -225,11 +225,12 @@ async function loadReservations() {
             return;
         }
 
-        // Estados que NO permiten cancelación: 3=Cancelada, 4=Completada
-        const estadosNoCancelables = [3, 4];
+        // Estados terminales — sin más modificaciones posibles: 3=Cancelada, 4=Completada
+        const estadosTerminales = [3, 4];
 
         list.innerHTML = reservations.map(r => {
-            const esCancelable = !estadosNoCancelables.includes(r.IdEstadoReserva || r.Estado);
+            const idEstado = r.IdEstadoReserva || r.Estado;
+            const esModificable = !estadosTerminales.includes(idEstado);
             const estadoClass = (r.NombreEstadoReserva || '').toLowerCase().replace(/\s+/g, '-');
 
             return `
@@ -247,11 +248,15 @@ async function loadReservations() {
                 </div>
                 <div class="reservation-actions">
                     <button class="btn btn-outline-primario" onclick="loadReservationDetails(${r.IdReserva})">Ver detalles</button>
-                    <button class="btn btn-outline-azul" onclick="abrirEdicion(${r.IdReserva})">Editar</button>
                     ${
-                      esCancelable
+                      esModificable
+                        ? `<button class="btn btn-outline-azul" onclick="abrirEdicion(${r.IdReserva})">Editar</button>`
+                        : ''
+                    }
+                    ${
+                      esModificable
                         ? `<button class="btn btn-outline-peligro" onclick="solicitarCancelacion(${r.IdReserva}, ${r.MontoTotal || 0})">Cancelar</button>`
-                        : `<button class="btn btn-outline-peligro" disabled style="opacity:0.35;cursor:not-allowed;">Cancelada</button>`
+                        : `<button class="btn btn-outline-peligro" disabled style="opacity:0.35;cursor:not-allowed;">${idEstado === 4 ? 'Completada' : 'Cancelada'}</button>`
                     }
                 </div>
             </div>`;
@@ -360,7 +365,7 @@ function buildReservationDetails(r) {
                     </div>
                     
                     <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                        <button class="btn btn-primario" onclick="abrirEdicion(${r.IdReserva})">Editar Reserva</button>
+                        ${[3, 4].includes(r.IdEstadoReserva) ? '' : `<button class="btn btn-primario" onclick="abrirEdicion(${r.IdReserva})">Editar Reserva</button>`}
                         <button class="btn btn-outline" onclick="ocultarDetalles()">Cerrar</button>                    </div>
                 </div>
             </div>
@@ -386,6 +391,14 @@ async function abrirEdicion(id) {
         ]);
         if (!resR.ok) return;
         const reservation = await resR.json();
+
+        // Guard defensivo: una reserva en estado terminal (Cancelada/Completada) no se puede editar,
+        // aunque se haya invocado abrirEdicion() sin pasar por el botón (que ya está oculto en ese caso).
+        if ([3, 4].includes(reservation.IdEstadoReserva)) {
+            alert(`Esta reserva ya fue ${reservation.IdEstadoReserva === 4 ? 'completada' : 'cancelada'} y no se puede modificar.`);
+            return;
+        }
+
         document.getElementById('editModalTitle').textContent = `Editar Reserva #${id}`;
         populateEditForm(reservation);
         document.getElementById('editModal').style.display = 'flex';
