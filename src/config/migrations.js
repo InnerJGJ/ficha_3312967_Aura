@@ -14,7 +14,7 @@ const addColumnIfMissing = async (table, column, definition) => {
 
 const runMigrations = async () => {
   try {
-    // Regla 3: marca de expiración en reservas pendientes (2 horas desde creación)
+    // Regla 3: marca de expiración en reservas pendientes (ver HORAS_EXPIRACION_RESERVA en config/business-rules.js)
     await addColumnIfMissing('reserva', 'FechaExpiracion', 'DATETIME NULL');
 
     // Regla 10: verificación de email para permitir reservas

@@ -1,10 +1,11 @@
 // Trabajos en segundo plano — se inician una sola vez con startJobs()
-// Regla 3: auto-cancelar reservas Pendientes que superen 2h sin confirmación
+// Regla 3: auto-cancelar reservas Pendientes que superen el plazo configurado sin confirmación
 // Regla 7: enviar recordatorio de check-in 24h antes
 
 const db           = require('../config/db');
 const emailService = require('./email.service');
 const usuariosService = require('./usuarios.service');
+const { HORAS_EXPIRACION_RESERVA } = require('../config/business-rules');
 
 const ESTADO_PENDIENTE = 1;
 const ESTADO_CANCELADO = 3;
@@ -36,8 +37,8 @@ const cancelarPendientesExpiradas = async () => {
         // Historial
         await connection.query(
           `INSERT INTO reserva_historial (IdReserva, EstadoAnterior, EstadoNuevo, ModificadoPor, Motivo)
-           VALUES (?, ?, ?, 'sistema', 'Cancelación automática: anticipo no recibido en 2 horas')`,
-          [reserva.IdReserva, ESTADO_PENDIENTE, ESTADO_CANCELADO]
+           VALUES (?, ?, ?, 'sistema', ?)`,
+          [reserva.IdReserva, ESTADO_PENDIENTE, ESTADO_CANCELADO, `Cancelación automática: anticipo no recibido en ${HORAS_EXPIRACION_RESERVA} hora(s)`]
         );
 
         await connection.commit();

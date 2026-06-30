@@ -1,6 +1,8 @@
 // Servicio de correos usando la API REST HTTP de Brevo (Puerto 443)
 // Evade bloqueos SMTP en plataformas Cloud como Railway
 
+const { HORAS_EXPIRACION_RESERVA } = require('../config/business-rules');
+
 const senderEmail = 'godienser@gmail.com';
 
 const getTransporter = async () => {
@@ -788,6 +790,7 @@ const sendReservationExpiredEmail = async (toEmail, reservation) => {
   const alojamiento = reservation.Alojamiento || reservation.NombreHabitacion || reservation.NombreCabana || '—';
   const checkin    = formatFecha(reservation.FechaInicio);
   const monto      = formatMoney(reservation.MontoTotal);
+  const plazoTexto = `${HORAS_EXPIRACION_RESERVA} hora${HORAS_EXPIRACION_RESERVA === 1 ? '' : 's'}`;
 
   const html = `
 <!DOCTYPE html><html lang="es">
@@ -805,10 +808,10 @@ const sendReservationExpiredEmail = async (toEmail, reservation) => {
       </tr>
       <tr><td style="padding:32px;">
         <h2 style="color:#1a2b4a;margin:0 0 12px;">Hola, ${nombre}</h2>
-        <p style="color:#4a5568;line-height:1.7;">Tu reserva <strong>#${idReserva}</strong> para <strong>${alojamiento}</strong> (check-in: ${checkin}) fue <strong style="color:#dc2626;">cancelada automáticamente</strong> porque no recibimos confirmación del anticipo dentro del plazo de <strong>2 horas</strong>.</p>
+        <p style="color:#4a5568;line-height:1.7;">Tu reserva <strong>#${idReserva}</strong> para <strong>${alojamiento}</strong> (check-in: ${checkin}) fue <strong style="color:#dc2626;">cancelada automáticamente</strong> porque no recibimos confirmación del anticipo dentro del plazo de <strong>${plazoTexto}</strong>.</p>
         <div style="background:#fff1f2;border-radius:12px;border-left:4px solid #e11d48;padding:20px 24px;margin:20px 0;">
           <p style="margin:0;color:#881337;">Monto de la reserva: <strong>$${monto} COP</strong><br>
-          Si deseas reservar nuevamente, puedes hacerlo en nuestro sitio web y recuerda completar el anticipo en las primeras 2 horas.</p>
+          Si deseas reservar nuevamente, puedes hacerlo en nuestro sitio web y recuerda completar el anticipo en las primeras ${plazoTexto}.</p>
         </div>
         <p style="color:#718096;font-size:0.9rem;">¿Tienes dudas? Escríbenos al WhatsApp <strong>${GLAMPING.whatsapp}</strong>.</p>
       </td></tr>

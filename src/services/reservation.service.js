@@ -3,6 +3,7 @@
 const db = require('../config/db');
 const usuariosService = require('./usuarios.service');
 const emailService = require('./email.service');
+const { HORAS_EXPIRACION_RESERVA } = require('../config/business-rules');
 
 // Obtener todas las reservas (con paginación opcional)
 const getAllReservations = async (page = null, limit = null) => {
@@ -469,10 +470,10 @@ const createReservation = async (data) => {
     const [result] = await connection.query('INSERT INTO reserva SET ?', reservaData);
     const reservaId = result.insertId;
 
-    // ── REGLA 3: Expiración 2 horas para confirmar con anticipo ─────────────
+    // ── REGLA 3: Expiración configurable para confirmar con anticipo ────────
     const estadoCreado = data.IdEstadoReserva || 1;
     if (estadoCreado === 1) {
-      const expiracion = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const expiracion = new Date(Date.now() + HORAS_EXPIRACION_RESERVA * 60 * 60 * 1000);
       await connection.query('UPDATE reserva SET FechaExpiracion = ? WHERE IdReserva = ?', [expiracion, reservaId]);
     }
 
