@@ -414,11 +414,11 @@ function renderReservas(reservas, kpis) {
                             <button onclick="verDetalleReserva(${r.IdReserva})" class="btn-icon-admin btn-view" title="Ver Detalle">
                                 <i data-lucide="eye" style="width:15px;"></i>
                             </button>
-                            ${esCompletada ? '' : `
+                            ${(esCompletada || esCancelada) ? '' : `
                             <button onclick="editarReserva(${r.IdReserva})" class="btn-icon-admin btn-edit" title="Editar Reserva">
                                 <i data-lucide="edit-2" style="width:15px;"></i>
                             </button>
-                            <button onclick="eliminarReserva(${r.IdReserva})" class="btn-icon-admin btn-delete" title="Eliminar Reserva">
+                            <button onclick="eliminarReserva(${r.IdReserva})" class="btn-icon-admin btn-delete" title="Cancelar reserva">
                                 <i data-lucide="trash-2" style="width:15px;"></i>
                             </button>`}
                         </div>
@@ -961,18 +961,8 @@ window.eliminarReserva = async (id) => {
             modal.style.display = 'flex';
             modal.classList.add('activo');
         } else {
-            // Reserva ya cancelada → confirmar eliminación física
-            mostrarConfirmacion(
-                '¿Eliminar Reserva?',
-                `La reserva #${id} ya está cancelada. ¿Desea eliminarla permanentemente del sistema?`,
-                async () => {
-                    try {
-                        const res = await fetch(`/api/reservas/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ motivo: '' }) });
-                        if (res.ok) { cargarReservas(reservasCurrentPage); mostrarNotificacion('Reserva eliminada correctamente.', 'success'); }
-                        else { const err = await res.json().catch(() => ({})); mostrarNotificacion(err.message || 'No se pudo eliminar la reserva.', 'error'); }
-                    } catch(e) { mostrarNotificacion('Error de conexión al servidor.', 'error'); }
-                }
-            );
+            // Reserva ya en estado terminal — no se elimina, queda en historial de ventas
+            mostrarNotificacion('Esta reserva ya está cancelada y forma parte del historial de ventas. Las reservas no se eliminan para mantener la trazabilidad del negocio.', 'info');
         }
     } catch(e) { mostrarNotificacion('Error de conexión al servidor.', 'error'); }
 };

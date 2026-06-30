@@ -242,7 +242,10 @@ function actualizarDesglose() {
     const items = [];
     const noches = actualizarContadorNoches();
 
+    // Solo un tipo de alojamiento — mismo orden de prioridad que calcularTotal()
     const hSel = document.getElementById('IDHabitacion');
+    const cSel = document.getElementById('IDCabana');
+    const pSel = document.getElementById('IDPaquete');
     if (hSel.value) {
         const h = habitacionesData.find(h=>String(h.IDHabitacion)===String(hSel.value));
         if (h) {
@@ -250,18 +253,14 @@ function actualizarDesglose() {
             const sub = noches>0?pn*noches:0;
             items.push({name:h.NombreHabitacion,val:sub,detail:noches>0?`$${formatCurrency(pn)}/noche × ${noches} noches`:'',type:'accommodation'});
         }
-    }
-    const cSel = document.getElementById('IDCabana');
-    if (cSel.value) {
+    } else if (cSel.value) {
         const c = cabanasData.find(c=>String(c.IDCabana)===String(cSel.value));
         if (c) {
             const pn = parseFloat(c.PrecioNoche||0);
             const sub = noches>0?pn*noches:0;
             items.push({name:c.NombreCabana,val:sub,detail:noches>0?`$${formatCurrency(pn)}/noche × ${noches} noches`:'',type:'accommodation'});
         }
-    }
-    const pSel = document.getElementById('IDPaquete');
-    if (pSel.value) {
+    } else if (pSel.value) {
         const p = paquetesData.find(p=>String(p.IDPaquete)===String(pSel.value));
         if (p) {
             const pn = parseFloat(p.Precio||p.precio||0);
@@ -447,18 +446,27 @@ function updateSelectStates() {
     const hSel = document.getElementById('IDHabitacion');
     const cSel = document.getElementById('IDCabana');
     const pSel = document.getElementById('IDPaquete');
-    const hSelected = hSel.value!=='';
-    const cSelected = cSel.value!=='';
-    // Habitación y cabaña siguen siendo mutuamente excluyentes
+    const hSelected = hSel.value !== '';
+    const cSelected = cSel.value !== '';
+    const pSelected = pSel.value !== '';
+
+    // Los tres tipos de alojamiento son mutuamente excluyentes:
+    // seleccionar uno deshabilita y limpia los otros dos.
     if (hSelected) {
-        cSel.disabled=true;cSel.value='';
+        cSel.disabled = true;  cSel.value = '';
+        pSel.disabled = true;  pSel.value = '';
     } else if (cSelected) {
-        hSel.disabled=true;hSel.value='';
+        hSel.disabled = true;  hSel.value = '';
+        pSel.disabled = true;  pSel.value = '';
+    } else if (pSelected) {
+        hSel.disabled = true;  hSel.value = '';
+        cSel.disabled = true;  cSel.value = '';
     } else {
-        hSel.disabled=false;cSel.disabled=false;populatePaquetes(null,false);
+        hSel.disabled = false;
+        cSel.disabled = false;
+        pSel.disabled = false;
+        populatePaquetes(null, false);
     }
-    // El paquete siempre está habilitado — puede combinarse con habitación o cabaña
-    pSel.disabled=false;
 }
 
 async function cargarServicios() {
@@ -796,12 +804,20 @@ function calcularTotal() {
     const animate=(elId,newVal)=>{ const el=document.getElementById(elId); if(!el)return; el.style.transition='opacity 0.15s'; el.style.opacity='0'; setTimeout(()=>{ el.textContent=`$${formatCurrency(newVal)}`; el.style.opacity='1'; },120); };
     if (noches<=0){ animate('subtotal',0); animate('iva',0); animate('total',0); actualizarDesglose(); actualizarSubtotalServicios(); return; }
     let precioAloj=0;
-    const pSel=document.getElementById('IDPaquete');
-    if (pSel.value){ const p=paquetesData.find(p=>String(p.IDPaquete)===String(pSel.value)); if(p) precioAloj=parseFloat(p.Precio||p.precio||0)*noches; }
     const hSel=document.getElementById('IDHabitacion');
-    if (hSel.value){ const h=habitacionesData.find(h=>String(h.IDHabitacion)===String(hSel.value)); if(h) precioAloj=parseFloat(h.Costo||h.precio||0)*noches; }
     const cSel=document.getElementById('IDCabana');
-    if (cSel.value){ const c=cabanasData.find(c=>String(c.IDCabana)===String(cSel.value)); if(c) precioAloj=parseFloat(c.PrecioNoche||0)*noches; }
+    const pSel=document.getElementById('IDPaquete');
+    // Solo un tipo de alojamiento a la vez — prioridad: Habitación > Cabaña > Paquete
+    if (hSel.value){
+        const h=habitacionesData.find(h=>String(h.IDHabitacion)===String(hSel.value));
+        if(h) precioAloj=parseFloat(h.Costo||h.precio||0)*noches;
+    } else if (cSel.value){
+        const c=cabanasData.find(c=>String(c.IDCabana)===String(cSel.value));
+        if(c) precioAloj=parseFloat(c.PrecioNoche||0)*noches;
+    } else if (pSel.value){
+        const p=paquetesData.find(p=>String(p.IDPaquete)===String(pSel.value));
+        if(p) precioAloj=parseFloat(p.Precio||p.precio||0)*noches;
+    }
     const totalServ=Array.from(document.querySelectorAll('.servicio-check:checked')).reduce((sum,s)=>sum+(parseFloat(s.dataset.costo)*getServicioQuantity(s.value)),0);
     const sub_total=precioAloj+totalServ;
     const sub=Math.round((sub_total / 1.19)*100)/100;
