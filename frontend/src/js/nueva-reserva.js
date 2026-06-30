@@ -247,48 +247,39 @@ function actualizarDesglose() {
     const items = [];
     const noches = actualizarContadorNoches();
 
-    // Habitación
+    // Solo un tipo de alojamiento — mismo orden de prioridad que calcularTotal()
     const habitacionSelect = document.getElementById('IDHabitacion');
+    const cabanaSelect     = document.getElementById('IDCabana');
+    const paqueteSelect    = document.getElementById('IDPaquete');
     if (habitacionSelect.value) {
         const h = habitacionesData.find(h => String(h.IDHabitacion) === String(habitacionSelect.value));
         if (h) {
             const precioPorNoche = parseFloat(h.Costo || h.precio || 0);
             const subtotal = noches > 0 ? precioPorNoche * noches : 0;
-            const label = `${h.NombreHabitacion}`;
-            const detail = noches > 0 
-                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}` 
+            const detail = noches > 0
+                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}`
                 : '';
-            items.push({ name: label, val: subtotal, detail, type: 'accommodation' });
+            items.push({ name: h.NombreHabitacion, val: subtotal, detail, type: 'accommodation' });
         }
-    }
-
-    // Cabaña
-    const cabanaSelect = document.getElementById('IDCabana');
-    if (cabanaSelect.value) {
+    } else if (cabanaSelect.value) {
         const c = cabanasData.find(c => String(c.IDCabana) === String(cabanaSelect.value));
         if (c) {
             const precioPorNoche = parseFloat(c.PrecioNoche || 0);
             const subtotal = noches > 0 ? precioPorNoche * noches : 0;
-            const label = `${c.NombreCabana}`;
-            const detail = noches > 0 
-                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}` 
+            const detail = noches > 0
+                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}`
                 : '';
-            items.push({ name: label, val: subtotal, detail, type: 'accommodation' });
+            items.push({ name: c.NombreCabana, val: subtotal, detail, type: 'accommodation' });
         }
-    }
-
-    // Paquete
-    const paqueteSelect = document.getElementById('IDPaquete');
-    if (paqueteSelect.value) {
+    } else if (paqueteSelect.value) {
         const p = paquetesData.find(p => String(p.IDPaquete) === String(paqueteSelect.value));
         if (p) {
             const precioPorNoche = parseFloat(p.Precio || p.precio || 0);
             const subtotal = noches > 0 ? precioPorNoche * noches : 0;
-            const label = p.NombrePaquete || p.nombre || 'Paquete';
-            const detail = noches > 0 
-                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}` 
+            const detail = noches > 0
+                ? `$${formatCurrency(precioPorNoche)}/noche × ${noches} ${noches === 1 ? 'noche' : 'noches'}`
                 : '';
-            items.push({ name: label, val: subtotal, detail, type: 'accommodation' });
+            items.push({ name: p.NombrePaquete || p.nombre || 'Paquete', val: subtotal, detail, type: 'accommodation' });
         }
     }
 
@@ -417,19 +408,25 @@ function updateSelectStates() {
 
     const hSelected = habitacionSelect.value !== '';
     const cSelected = cabanaSelect.value !== '';
+    const pSelected = paqueteSelect.value !== '';
 
-    // Habitación y cabaña siguen siendo mutuamente excluyentes
+    // Los tres tipos de alojamiento son mutuamente excluyentes:
+    // seleccionar uno deshabilita y limpia los otros dos.
     if (hSelected) {
-        cabanaSelect.disabled = true; cabanaSelect.value = '';
+        cabanaSelect.disabled = true;  cabanaSelect.value = '';
+        paqueteSelect.disabled = true; paqueteSelect.value = '';
     } else if (cSelected) {
         habitacionSelect.disabled = true; habitacionSelect.value = '';
+        paqueteSelect.disabled = true;    paqueteSelect.value = '';
+    } else if (pSelected) {
+        habitacionSelect.disabled = true; habitacionSelect.value = '';
+        cabanaSelect.disabled = true;     cabanaSelect.value = '';
     } else {
         habitacionSelect.disabled = false;
         cabanaSelect.disabled = false;
+        paqueteSelect.disabled = false;
         populatePaquetes(null, false);
     }
-    // El paquete siempre está habilitado — puede combinarse con habitación o cabaña
-    paqueteSelect.disabled = false;
 }
 
 async function cargarServicios() {
@@ -1041,19 +1038,21 @@ function mostrarModalDetalle(type, id) {
         incluidos = ['🌲 Entorno natural','🏡 Espacio privado','☕ Comodidades completas','🔒 Acceso exclusivo'];
     } else {
         tipoLabel    = '📦 Paquete';
-        titulo       = data.NombrePaquete || 'Paquete';
+        titulo       = data.NombrePaquete || data.nombre || 'Paquete';
         descripcion  = data.Descripcion || data.descripcion || '';
         precio       = data.Precio || data.precio || 0;
         sufijoPrecio = '';
-        stats = data.NombreHabitacion ? [`🏠 ${data.NombreHabitacion}`] : [];
-        const pkgInc = {
-            'Paquete Romántico': ['🛁 Jacuzzi privado','💆 Masaje relajante','🍾 Decoración especial','🌹 Detalles románticos'],
-            'Paquete Aventura':  ['🐴 Cabalgata guiada','🥾 Caminata ecológica','🗺️ Guía experto','🌿 Tour por naturaleza'],
-            'Paquete Familiar':  ['🍳 Desayuno campestre','🔥 Fogata nocturna','🎮 Actividades grupales','👨‍👩‍👧‍👦 Espacio para todos'],
-            'Paquete Estrellas': ['🔥 Fogata nocturna','🍳 Desayuno incluido','⭐ Observación de estrellas','🌙 Experiencia nocturna'],
-            'Paquete Relax':     ['💆 Masaje completo','🛁 Jacuzzi privado','🧘 Zona de spa','🌿 Desconexión total']
-        };
-        incluidos = pkgInc[titulo] || ['✨ Experiencia glamping','🌿 Contacto con naturaleza','🏨 Alojamiento incluido','🎁 Actividades especiales'];
+        // Alojamiento real incluido en el paquete (habitación o cabaña, lo que tenga asignado)
+        const alojamientoNombre = data.NombreHabitacion || data.NombreCabana || '';
+        stats = alojamientoNombre ? [`🏠 ${alojamientoNombre}`] : [];
+        // "Incluye" construido con datos reales: alojamiento + servicios adicionales del paquete
+        incluidos = [];
+        if (alojamientoNombre) incluidos.push(`🏨 ${alojamientoNombre}`);
+        if (data.NombreServicio) {
+            data.NombreServicio.split(',').map(s => s.trim()).filter(Boolean).forEach(s => incluidos.push(`✨ ${s}`));
+        }
+        if (data.NumeroPersonas) incluidos.push(`👥 Para ${data.NumeroPersonas} persona(s)`);
+        if (incluidos.length === 0) incluidos = ['✨ Experiencia glamping completa'];
     }
 
     content.innerHTML = `
@@ -1090,69 +1089,8 @@ function cerrarModal() {
    CALCULAR TOTAL + DESGLOSE
    ----------------------------------------------- */
 function calcularTotal() {
-    // Obtener cantidad de noches
     const noches = actualizarContadorNoches();
-    
-    // Si no hay noches seleccionadas, mostrar $0
-    if (noches <= 0) {
-        const animateValue = (elId, newVal) => {
-            const el = document.getElementById(elId);
-            if (el) {
-                el.style.transition = 'opacity 0.15s ease';
-                el.style.opacity = '0';
-                setTimeout(() => {
-                    el.textContent = `$${formatCurrency(newVal)}`;
-                    el.style.opacity = '1';
-                }, 120);
-            }
-        };
-        animateValue('subtotal', 0);
-        animateValue('iva', 0);
-        animateValue('total', 0);
-        actualizarDesglose();
-        actualizarSubtotalServicios();
-        return;
-    }
 
-    // Cálculo de alojamiento × noches
-    let precioAlojamiento = 0;
-    const paqueteSelect = document.getElementById('IDPaquete');
-    if (paqueteSelect.value) {
-        const p = paquetesData.find(p => String(p.IDPaquete) === String(paqueteSelect.value));
-        if (p) {
-            const precioPorNoche = parseFloat(p.Precio || p.precio || 0);
-            precioAlojamiento = precioPorNoche * noches;
-        }
-    }
-
-    const habitacionSelect = document.getElementById('IDHabitacion');
-    if (habitacionSelect.value) {
-        const h = habitacionesData.find(h => String(h.IDHabitacion) === String(habitacionSelect.value));
-        if (h) {
-            const precioPorNoche = parseFloat(h.Costo || h.precio || 0);
-            precioAlojamiento = precioPorNoche * noches;
-        }
-    }
-
-    const cabanaSelect = document.getElementById('IDCabana');
-    if (cabanaSelect.value) {
-        const c = cabanasData.find(c => String(c.IDCabana) === String(cabanaSelect.value));
-        if (c) {
-            const precioPorNoche = parseFloat(c.PrecioNoche || 0);
-            precioAlojamiento = precioPorNoche * noches;
-        }
-    }
-
-    // Cálculo de servicios adicionales
-    const totalServicios = Array.from(document.querySelectorAll('.servicio-check:checked'))
-        .reduce((sum, s) => sum + (parseFloat(s.dataset.costo) * getServicioQuantity(s.value)), 0);
-
-    // Cálculo final
-    const totalConIVA = precioAlojamiento + totalServicios;
-    const subtotalSinIVA = Math.round((totalConIVA / 1.19) * 100) / 100;
-    const ivaCalculado = Math.round((totalConIVA - subtotalSinIVA) * 100) / 100;
-
-    // Transición suave en los valores
     const animateValue = (elId, newVal) => {
         const el = document.getElementById(elId);
         if (el) {
@@ -1165,11 +1103,37 @@ function calcularTotal() {
         }
     };
 
+    // Alojamiento — solo se multiplica si hay noches (sin fechas = $0, pero servicios sí suman)
+    let precioAlojamiento = 0;
+    if (noches > 0) {
+        const habitacionSelect = document.getElementById('IDHabitacion');
+        const cabanaSelect     = document.getElementById('IDCabana');
+        const paqueteSelect    = document.getElementById('IDPaquete');
+        // Solo un tipo de alojamiento a la vez — prioridad: Habitación > Cabaña > Paquete
+        if (habitacionSelect.value) {
+            const h = habitacionesData.find(h => String(h.IDHabitacion) === String(habitacionSelect.value));
+            if (h) precioAlojamiento = parseFloat(h.Costo || h.precio || 0) * noches;
+        } else if (cabanaSelect.value) {
+            const c = cabanasData.find(c => String(c.IDCabana) === String(cabanaSelect.value));
+            if (c) precioAlojamiento = parseFloat(c.PrecioNoche || 0) * noches;
+        } else if (paqueteSelect.value) {
+            const p = paquetesData.find(p => String(p.IDPaquete) === String(paqueteSelect.value));
+            if (p) precioAlojamiento = parseFloat(p.Precio || p.precio || 0) * noches;
+        }
+    }
+
+    // Servicios — siempre se calculan aunque no haya fechas aún
+    const totalServicios = Array.from(document.querySelectorAll('.servicio-check:checked'))
+        .reduce((sum, s) => sum + (parseFloat(s.dataset.costo) * getServicioQuantity(s.value)), 0);
+
+    const totalConIVA    = precioAlojamiento + totalServicios;
+    const subtotalSinIVA = Math.round((totalConIVA / 1.19) * 100) / 100;
+    const ivaCalculado   = Math.round((totalConIVA - subtotalSinIVA) * 100) / 100;
+
     animateValue('subtotal', subtotalSinIVA);
     animateValue('iva', ivaCalculado);
     animateValue('total', totalConIVA);
 
-    // Actualizar desglose y subtotal de servicios
     actualizarDesglose();
     actualizarSubtotalServicios();
 }

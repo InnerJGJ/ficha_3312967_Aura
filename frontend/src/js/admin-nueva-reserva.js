@@ -737,11 +737,19 @@ function mostrarModalDetalle(type,id) {
         stats=[data.CapacidadPersonas?`👥 ${data.CapacidadPersonas} personas`:null,data.NumeroHabitaciones?`🛏️ ${data.NumeroHabitaciones} hab.`:null].filter(Boolean);
         incluidos=['🌲 Entorno natural','🏡 Espacio privado','☕ Comodidades completas','🔒 Acceso exclusivo'];
     } else {
-        tipoLabel='📦 Paquete'; titulo=data.NombrePaquete||'Paquete';
+        tipoLabel='📦 Paquete'; titulo=data.NombrePaquete||data.nombre||'Paquete';
         descripcion=data.Descripcion||data.descripcion||''; precio=data.Precio||data.precio||0; sufijoPrecio='';
-        stats=data.NombreHabitacion?[`🏠 ${data.NombreHabitacion}`]:[];
-        const pi={'Paquete Romántico':['🛁 Jacuzzi privado','💆 Masaje relajante','🍾 Decoración especial','🌹 Detalles románticos'],'Paquete Aventura':['🐴 Cabalgata guiada','🥾 Caminata ecológica','🗺️ Guía experto','🌿 Tour naturaleza'],'Paquete Familiar':['🍳 Desayuno campestre','🔥 Fogata nocturna','🎮 Actividades grupales','👨‍👩‍👧‍👦 Espacio familiar'],'Paquete Estrellas':['🔥 Fogata nocturna','🍳 Desayuno incluido','⭐ Observación estrellas','🌙 Experiencia nocturna'],'Paquete Relax':['💆 Masaje completo','🛁 Jacuzzi privado','🧘 Zona spa','🌿 Desconexión total']};
-        incluidos=pi[titulo]||['✨ Experiencia glamping','🌿 Contacto naturaleza','🏨 Alojamiento incluido','🎁 Actividades especiales'];
+        // Alojamiento real incluido en el paquete (habitación o cabaña, lo que tenga asignado)
+        const alojamientoNombre = data.NombreHabitacion || data.NombreCabana || '';
+        stats = alojamientoNombre ? [`🏠 ${alojamientoNombre}`] : [];
+        // "Incluye" construido con datos reales: alojamiento + servicios adicionales del paquete
+        incluidos = [];
+        if (alojamientoNombre) incluidos.push(`🏨 ${alojamientoNombre}`);
+        if (data.NombreServicio) {
+            data.NombreServicio.split(',').map(s => s.trim()).filter(Boolean).forEach(s => incluidos.push(`✨ ${s}`));
+        }
+        if (data.NumeroPersonas) incluidos.push(`👥 Para ${data.NumeroPersonas} persona(s)`);
+        if (incluidos.length === 0) incluidos = ['✨ Experiencia glamping completa'];
     }
     content.innerHTML=`
         <div class="nr-modal__image" ${imgUrl?`style="background-image:url('${imgUrl}')"`:''}></div>

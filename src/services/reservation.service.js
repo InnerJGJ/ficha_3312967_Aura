@@ -1062,7 +1062,9 @@ const cancelReservation = async (id, { confirmarConPenalizacion = false } = {}) 
 
   const reserva = rows[0];
 
-  // 2. Validar que el estado actual permita cancelación
+  // 2. Validar que el estado actual permita cancelación (misma regla que
+  //    TRANSICIONES_VALIDAS usada en updateReservationStatus — el flujo es
+  //    unidireccional, "En Proceso" solo puede pasar a "Completada")
   if (reserva.IdEstadoReserva === ESTADO_CANCELADO) {
     const err = new Error('Esta reserva ya fue cancelada anteriormente.');
     err.statusCode = 409;
@@ -1070,6 +1072,11 @@ const cancelReservation = async (id, { confirmarConPenalizacion = false } = {}) 
   }
   if (reserva.IdEstadoReserva === ESTADO_COMPLETADO) {
     const err = new Error('No se puede cancelar una reserva que ya fue completada.');
+    err.statusCode = 422;
+    throw err;
+  }
+  if (reserva.IdEstadoReserva === ESTADO_EN_PROCESO) {
+    const err = new Error('No se puede cancelar una reserva que ya está en proceso (check-in realizado). Contacta al administrador.');
     err.statusCode = 422;
     throw err;
   }
