@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const db = require('../config/db');
 
 const verificationTokens = new Map();
+const resetTokens = new Map();
 
 const bcrypt = require('bcryptjs');
 
@@ -56,8 +57,8 @@ const register = async (data) => {
     const hashedPassword = await bcrypt.hash(Contrasena, salt);
 
     const sqlUsuario = `INSERT INTO usuarios
-      (NombreUsuario, Contrasena, Apellido, Email, TipoDocumento, NumeroDocumento, Telefono, Pais, Direccion, Departamento, Municipio, IDRol)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (NombreUsuario, Contrasena, Apellido, Email, TipoDocumento, NumeroDocumento, Telefono, Pais, Direccion, Departamento, Municipio, IDRol, EmailVerificado)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`;
 
     const [result] = await connection.query(sqlUsuario, [
       NombreUsuario, hashedPassword, Apellido, Email,
@@ -101,6 +102,10 @@ const verifyEmailToken = (token) => {
   return record.email;
 };
 
+const markEmailVerified = async (email) => {
+  await db.query('UPDATE usuarios SET EmailVerificado = 1 WHERE LOWER(Email) = LOWER(?)', [email]);
+};
+
 const updatePassword = async (Email, newPassword) => {
   try {
     const salt = await bcrypt.genSalt(10);
@@ -113,4 +118,18 @@ const updatePassword = async (Email, newPassword) => {
   }
 };
 
-module.exports = { login, register, createVerificationToken, verifyEmailToken, updatePassword };
+const createPasswordResetToken = (email) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 horas
+  resetTokens.set(token, { email, expiresAt });
+  return token;
+};
+
+const validateAndConsumeResetToken = (token) => {
+  const record = resetTokens.get(token);
+  if (!record || Date.now() > record.expiresAt) return null;
+  resetTokens.delete(token);
+  return record.email;
+};
+
+module.exports = { login, register, createVerificationToken, verifyEmailToken, markEmailVerified, updatePassword, createPasswordResetToken, validateAndConsumeResetToken };

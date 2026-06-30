@@ -305,6 +305,10 @@ function renderReservas(reservas, kpis) {
                 <span class="reservas-kpi__num">${kpis.confirmadas}</span>
                 <span class="reservas-kpi__label">Confirmadas</span>
             </div>
+            <div class="reservas-kpi" style="border-left:3px solid #0D9488;">
+                <span class="reservas-kpi__num" style="color:#0D9488;">${kpis.enProceso || 0}</span>
+                <span class="reservas-kpi__label">En Proceso</span>
+            </div>
             <div class="reservas-kpi reservas-kpi--monto">
                 <span class="reservas-kpi__num">$${kpis.montoTotal.toLocaleString('es-CO')}</span>
                 <span class="reservas-kpi__label">Ingresos totales</span>
@@ -324,8 +328,10 @@ function renderReservas(reservas, kpis) {
         <!-- CARDS DE RESERVAS -->
         <div class="reservas-grid" id="reservasGrid">
             ${reservas.map(r => {
-                const cfg        = getEstado(r.NombreEstadoReserva);
-                const esCompletada = (r.NombreEstadoReserva || '').toLowerCase() === 'completada';
+                const cfg          = getEstado(r.NombreEstadoReserva);
+                const estadoNombre = (r.NombreEstadoReserva || '').toLowerCase();
+                const esCompletada = estadoNombre === 'completada';
+                const esCancelada  = estadoNombre === 'cancelada';
                 const dias  = diasRestantes(r.FechaFinalizacion);
                 const diasTxt = dias !== null
                     ? dias > 0
@@ -334,6 +340,16 @@ function renderReservas(reservas, kpis) {
                             ? `<span style="color:#f59e0b; font-size:0.75rem;">⚡ Finaliza hoy</span>`
                             : `<span style="color:#ef4444; font-size:0.75rem;">✓ Finalizada hace ${Math.abs(dias)} días</span>`
                     : '';
+
+                // Acciones disponibles según flujo unidireccional de estados
+                const accionesEstado = {
+                    1: [{ id: 2, label: 'Confirmar',   icon: 'check-circle-2', color: '#10b981' },
+                        { id: 3, label: 'Cancelar',    icon: 'x-circle',       color: '#ef4444', esCancelacion: true }],
+                    2: [{ id: 5, label: 'Iniciar',     icon: 'play-circle',    color: '#0D9488' },
+                        { id: 3, label: 'Cancelar',    icon: 'x-circle',       color: '#ef4444', esCancelacion: true }],
+                    5: [{ id: 4, label: 'Completar',   icon: 'check-circle',   color: '#2B6CB0' }],
+                };
+                const acciones = accionesEstado[r.IdEstadoReserva] || [];
 
                 return `
                 <div class="reserva-card${esCompletada ? ' reserva-card--completada' : ''}" data-estado="${r.NombreEstadoReserva?.toLowerCase()}">
@@ -345,17 +361,22 @@ function renderReservas(reservas, kpis) {
                                 ${r.NombreEstadoReserva}
                             </span>
                             ${esCompletada ? '<span class="reserva-card__historial-tag">🔒 Historial</span>' : ''}
+                            ${esCancelada  ? '<span class="reserva-card__historial-tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">✕ Cancelada</span>' : ''}
                         </div>
-                        <div class="reserva-card__select-wrap">
-                            <select class="reserva-estado-select" ${esCompletada ? 'disabled title="Las reservas completadas son de solo lectura"' : `onchange="cambiarEstado(${r.IdReserva}, this.value)"`}
-                                style="border-color: ${cfg.border}; color: ${cfg.color}; ${esCompletada ? 'opacity:0.5; cursor:not-allowed;' : ''}">
-                                ${reservasEstados.map(e => `
-                                    <option value="${e.IdEstadoReserva}"
-                                        ${e.IdEstadoReserva === r.IdEstadoReserva ? 'selected' : ''}>
-                                        ${e.NombreEstadoReserva}
-                                    </option>
-                                `).join('')}
-                            </select>
+                        <div class="reserva-card__select-wrap" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            ${acciones.length === 0
+                                ? ''
+                                : acciones.map(a => `
+                                    <button onclick="${a.esCancelacion
+                                        ? `abrirCancelacionEstado(${r.IdReserva})`
+                                        : `cambiarEstado(${r.IdReserva}, ${a.id})`}"
+                                        style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border:1.5px solid ${a.color}33;background:${a.color}11;color:${a.color};border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
+                                        onmouseover="this.style.background='${a.color}22'" onmouseout="this.style.background='${a.color}11'">
+                                        <i data-lucide="${a.icon}" style="width:11px;height:11px;"></i>
+                                        ${a.label}
+                                    </button>
+                                `).join('')
+                            }
                         </div>
                     </div>
                     <div class="reserva-card__body">
@@ -447,16 +468,18 @@ function filtrarReservas(estado, btn) {
 
 async function cambiarEstado(idReserva, idEstado) {
     try {
-        const response = await fetch(`/api/reservas/${idReserva}`, {
-            method: 'PUT',
+        const response = await fetch(`/api/reservas/${idReserva}/status`, {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ IdEstadoReserva: idEstado })
+            body: JSON.stringify({ IdEstadoReserva: Number(idEstado) })
         });
         if (response.ok) {
-            cargarReservas();
+            cargarReservas(reservasCurrentPage);
             mostrarNotificacion('Estado de la reserva actualizado.', 'success');
+        } else {
+            const err = await response.json().catch(() => ({}));
+            mostrarNotificacion(err.message || 'Error al cambiar el estado de la reserva.', 'error');
         }
-        else mostrarNotificacion('Error al cambiar el estado de la reserva.', 'error');
     } catch (error) {
         mostrarNotificacion('Error de conexión al servidor.', 'error');
     }
@@ -617,8 +640,10 @@ function erRecalcular() {
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
         ? Math.round((new Date(fin) - new Date(inicio)) / 86400000)
         : 1;
-    const alojSelect = document.getElementById('er_alojamiento');
-    const alojPrecio = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
+    const alojSelect    = document.getElementById('er_alojamiento');
+    const alojPrecio    = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
+    const paqAdicSelect = document.getElementById('er_paqueteAdicional');
+    const paqAdicPrecio = paqAdicSelect?.value ? Number(paqAdicSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
     const totalServicios = [...document.querySelectorAll('#er_servicios_grid .er-srv-check:checked')]
         .reduce((sum, cb) => {
             const qty = parseInt(document.querySelector(`.er-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
@@ -631,7 +656,7 @@ function erRecalcular() {
         const lbl = document.querySelector(`.er-srv-total[data-servicio-id="${cb.value}"]`);
         if (lbl) lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : '';
     });
-    const total = alojPrecio * noches + totalServicios;
+    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
     const el = document.getElementById('er_monto');
     if (el) el.value = `$${total.toLocaleString('es-CO')}`;
 }
@@ -658,13 +683,20 @@ window.editarReserva = async (id) => {
 
         const fmt = f => f ? new Date(f).toISOString().split('T')[0] : '';
 
-        // Determinar tipo y alojamiento preseleccionado
-        // Comprobar IDPaquete primero para no confundir con la habitación del paquete
+        // Determinar tipo de alojamiento y paquete adicional.
+        // Habitación/cabaña tienen prioridad; el paquete puede ser standalone o adicional.
         let tipoActual = 'habitacion';
         let idAlojActual = null;
-        if (r.IDPaquete)    { tipoActual = 'paquete';    idAlojActual = r.IDPaquete;    }
-        else if (r.IDCabana){ tipoActual = 'cabana';     idAlojActual = r.IDCabana;     }
-        else if (r.IDHabitacion) { tipoActual = 'habitacion'; idAlojActual = r.IDHabitacion; }
+        let idPaqueteAdicional = null;
+        if (r.IDCabana) {
+            tipoActual = 'cabana';     idAlojActual = r.IDCabana;
+            idPaqueteAdicional = r.IDPaquete || null;
+        } else if (r.IDHabitacion) {
+            tipoActual = 'habitacion'; idAlojActual = r.IDHabitacion;
+            idPaqueteAdicional = r.IDPaquete || null;
+        } else if (r.IDPaquete) {
+            tipoActual = 'paquete';    idAlojActual = r.IDPaquete;
+        }
 
         const serviciosActivos = new Map((r.servicios || []).map(s => [Number(s.IDServicio), Number(s.Cantidad || 1)]));
 
@@ -741,6 +773,15 @@ window.editarReserva = async (id) => {
                     </select>
                 </div>
 
+                <!-- Paquete adicional (visible cuando el alojamiento es habitación o cabaña) -->
+                <div id="er_paquete_adicional_wrap" class="form-group" style="grid-column:1/-1;${tipoActual === 'paquete' ? 'display:none;' : ''}">
+                    <label style="font-size:0.72rem;">📦 PAQUETE ADICIONAL <span style="font-weight:400;color:rgba(26,43,74,0.5);">(opcional)</span></label>
+                    <select id="er_paqueteAdicional" class="form-input" onchange="erRecalcular()">
+                        <option value="">Sin paquete adicional</option>
+                        ${paquetes.map(p => `<option value="${p.IDPaquete}" data-precio="${p.precio}"${p.IDPaquete == idPaqueteAdicional ? ' selected' : ''}>${p.nombre} — $${Number(p.precio).toLocaleString('es-CO')}/noche</option>`).join('')}
+                    </select>
+                </div>
+
                 <!-- Servicios -->
                 ${separador('⭐','Servicios Adicionales')}
                 <div id="er_servicios_grid" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;">
@@ -792,6 +833,12 @@ window.editarReserva = async (id) => {
                 document.getElementById('er_alojamiento').innerHTML = renderOpciones(tipo, null);
                 const lbl = { habitacion:'🛏 Habitación', cabana:'🏕 Cabaña', paquete:'📦 Paquete' };
                 document.getElementById('er_aloj_label').textContent = lbl[tipo];
+                // Mostrar/ocultar paquete adicional según el tipo seleccionado
+                const paqWrap = document.getElementById('er_paquete_adicional_wrap');
+                if (paqWrap) {
+                    paqWrap.style.display = tipo === 'paquete' ? 'none' : '';
+                    if (tipo === 'paquete') document.getElementById('er_paqueteAdicional').value = '';
+                }
                 document.querySelectorAll('.er-tipo-btn').forEach(b => {
                     const a = b.dataset.tipo === tipo;
                     b.style.background     = a ? '#2B6CB0' : '#fff';
@@ -802,8 +849,8 @@ window.editarReserva = async (id) => {
             });
         });
 
-        // Recalcular al cambiar fechas, alojamiento o servicios
-        ['er_fechaInicio','er_fechaFin','er_alojamiento'].forEach(elId =>
+        // Recalcular al cambiar fechas, alojamiento, paquete adicional o servicios
+        ['er_fechaInicio','er_fechaFin','er_alojamiento','er_paqueteAdicional'].forEach(elId =>
             document.getElementById(elId)?.addEventListener('change', erRecalcular)
         );
         // los checkboxes ya tienen onchange="erRecalcular()" en el HTML generado
@@ -848,6 +895,11 @@ window.guardarReserva = async (id) => {
     if (tipoAloj === 'habitacion') payload.IDHabitacion = Number(idAloj);
     else if (tipoAloj === 'cabana')   payload.IDCabana    = Number(idAloj);
     else if (tipoAloj === 'paquete')  payload.IDPaquete   = Number(idAloj);
+    // Paquete adicional: solo aplica cuando el alojamiento es habitación o cabaña
+    if (tipoAloj !== 'paquete') {
+        const idPaqAdicional = document.getElementById('er_paqueteAdicional')?.value;
+        if (idPaqAdicional) payload.IDPaquete = Number(idPaqAdicional);
+    }
 
     try {
         const res = await fetch(`/api/reservas/${id}`, {
@@ -868,25 +920,99 @@ window.guardarReserva = async (id) => {
     }
 };
 
-window.eliminarReserva = (id) => {
-    mostrarConfirmacion(
-        '¿Eliminar Reserva?',
-        `¿Está seguro de que desea eliminar la reserva #${id}? Esta acción no se puede deshacer.`,
-        async () => {
-            try {
-                const res = await fetch(`/api/reservas/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    cargarReservas(reservasCurrentPage);
-                    mostrarNotificacion('Reserva eliminada correctamente.', 'success');
-                } else {
-                    const err = await res.json().catch(() => ({}));
-                    mostrarNotificacion(`No se pudo eliminar: ${err.message || ''}`, 'error');
+// ── Motivo de cancelación de reserva ──────────────────────────────────────────
+let _cancelReservaId     = null;
+let _cancelReservaActiva = false;
+// 'viaEstado': cambio de estado con PATCH /status | 'viaEliminar': borrado con DELETE
+let _cancelReservaMode   = 'viaEliminar';
+
+window.eliminarReserva = async (id) => {
+    // Consultar estado actual de la reserva para saber si es activa
+    try {
+        const r = await fetch(`/api/reservas/${id}`);
+        if (!r.ok) { mostrarNotificacion('No se pudo obtener la reserva.', 'error'); return; }
+        const reserva = await r.json();
+        const ESTADOS_ACTIVOS = [1, 2, 5]; // Pendiente, Confirmada, En Proceso
+        _cancelReservaId     = id;
+        _cancelReservaActiva = ESTADOS_ACTIVOS.includes(reserva.IdEstadoReserva || reserva.Estado);
+
+        if (_cancelReservaActiva) {
+            // Reserva activa → pedir motivo
+            _cancelReservaMode = 'viaEliminar';
+            document.getElementById('cancelReasonTitle').textContent    = `Cancelar Reserva #${id}`;
+            document.getElementById('cancelReasonSubtitle').textContent = 'Esta reserva está activa. El cliente recibirá un correo con el motivo de la cancelación.';
+            document.getElementById('cancelReasonText').value           = '';
+            document.getElementById('cancelReasonErr').style.display    = 'none';
+            const modal = document.getElementById('cancelReasonModal');
+            modal.style.display = 'flex';
+        } else {
+            // Reserva ya cancelada → confirmar eliminación física
+            mostrarConfirmacion(
+                '¿Eliminar Reserva?',
+                `La reserva #${id} ya está cancelada. ¿Desea eliminarla permanentemente del sistema?`,
+                async () => {
+                    try {
+                        const res = await fetch(`/api/reservas/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ motivo: '' }) });
+                        if (res.ok) { cargarReservas(reservasCurrentPage); mostrarNotificacion('Reserva eliminada correctamente.', 'success'); }
+                        else { const err = await res.json().catch(() => ({})); mostrarNotificacion(err.message || 'No se pudo eliminar la reserva.', 'error'); }
+                    } catch(e) { mostrarNotificacion('Error de conexión al servidor.', 'error'); }
                 }
-            } catch(e) {
-                mostrarNotificacion('Error de conexión al servidor.', 'error');
-            }
+            );
         }
-    );
+    } catch(e) { mostrarNotificacion('Error de conexión al servidor.', 'error'); }
+};
+
+window.cerrarModalMotivo = () => {
+    document.getElementById('cancelReasonModal').style.display = 'none';
+    _cancelReservaId   = null;
+    _cancelReservaMode = 'viaEliminar';
+};
+
+// Abre el modal de motivo desde los botones de acción de estado (sin eliminar la reserva)
+window.abrirCancelacionEstado = (id) => {
+    _cancelReservaId   = id;
+    _cancelReservaMode = 'viaEstado';
+    document.getElementById('cancelReasonTitle').textContent    = `Cancelar Reserva #${id}`;
+    document.getElementById('cancelReasonSubtitle').textContent = 'El cliente recibirá un correo con el motivo de la cancelación.';
+    document.getElementById('cancelReasonText').value           = '';
+    document.getElementById('cancelReasonErr').style.display    = 'none';
+    document.getElementById('cancelReasonModal').style.display  = 'flex';
+};
+
+window.confirmarCancelacionConMotivo = async () => {
+    const motivo = document.getElementById('cancelReasonText').value.trim();
+    if (!motivo) {
+        document.getElementById('cancelReasonErr').style.display = 'block';
+        return;
+    }
+    const id   = _cancelReservaId;
+    const mode = _cancelReservaMode;
+    cerrarModalMotivo();
+    try {
+        let res;
+        if (mode === 'viaEstado') {
+            // Cambio de estado a Cancelada (3) via PATCH /status — mantiene historial
+            res = await fetch(`/api/reservas/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ IdEstadoReserva: 3, motivo })
+            });
+        } else {
+            // Flujo de eliminación (botón Delete en reserva activa) via DELETE
+            res = await fetch(`/api/reservas/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ motivo })
+            });
+        }
+        if (res.ok) {
+            cargarReservas(reservasCurrentPage);
+            mostrarNotificacion('Reserva cancelada. Se envió un correo al cliente con el motivo.', 'success');
+        } else {
+            const err = await res.json().catch(() => ({}));
+            mostrarNotificacion(err.message || 'No se pudo cancelar la reserva.', 'error');
+        }
+    } catch(e) { mostrarNotificacion('Error de conexión al servidor.', 'error'); }
 };
 
 // ===== HABITACIONES =====
@@ -979,17 +1105,57 @@ async function cargarHabitaciones() {
 }
 
 // ===== USUARIOS =====
+let _usuariosFiltro = 'todos'; // 'todos' | 'clientes' | 'admins'
+
 async function cargarUsuarios() {
     const list = document.getElementById('usuariosList');
+    if (!list) return;
     if (!list.innerHTML.trim()) {
         list.innerHTML = '<p style="color:rgba(26,43,74,0.5); padding:2rem;">Cargando usuarios...</p>';
     }
 
     try {
         const response = await fetch('/api/usuarios');
-        const usuarios = await response.json();
+        const todosUsuarios = await response.json();
+
+        // Aplicar filtro
+        const usuarios = todosUsuarios.filter(u => {
+            if (_usuariosFiltro === 'clientes') return u.IDRol === 1 && (u.Estado === 1 || u.Estado === undefined);
+            if (_usuariosFiltro === 'admins')   return u.IDRol === 2;
+            return true;
+        });
+
+        const totalClientes = todosUsuarios.filter(u => u.IDRol === 1 && (u.Estado === 1 || u.Estado === undefined)).length;
+        const totalAdmins   = todosUsuarios.filter(u => u.IDRol === 2).length;
 
         list.innerHTML = `
+            <!-- Tabs de filtro -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <button onclick="setUsuariosFiltro('todos')"
+                    style="padding:7px 18px;border-radius:20px;border:1.5px solid rgba(49,130,206,0.3);
+                           background:${_usuariosFiltro==='todos'?'linear-gradient(135deg,#1a3c5e,#2b6cb0)':'#fff'};
+                           color:${_usuariosFiltro==='todos'?'#fff':'#1a2b4a'};font-size:0.82rem;font-weight:600;cursor:pointer;">
+                    Todos <span style="opacity:.7;">(${todosUsuarios.length})</span>
+                </button>
+                <button onclick="setUsuariosFiltro('clientes')"
+                    style="padding:7px 18px;border-radius:20px;border:1.5px solid rgba(49,130,206,0.3);
+                           background:${_usuariosFiltro==='clientes'?'linear-gradient(135deg,#065f46,#059669)':'#fff'};
+                           color:${_usuariosFiltro==='clientes'?'#fff':'#1a2b4a'};font-size:0.82rem;font-weight:600;cursor:pointer;">
+                    Clientes activos <span style="opacity:.7;">(${totalClientes})</span>
+                </button>
+                <button onclick="setUsuariosFiltro('admins')"
+                    style="padding:7px 18px;border-radius:20px;border:1.5px solid rgba(49,130,206,0.3);
+                           background:${_usuariosFiltro==='admins'?'linear-gradient(135deg,#4c1d95,#7c3aed)':'#fff'};
+                           color:${_usuariosFiltro==='admins'?'#fff':'#1a2b4a'};font-size:0.82rem;font-weight:600;cursor:pointer;">
+                    Administradores <span style="opacity:.7;">(${totalAdmins})</span>
+                </button>
+                ${_usuariosFiltro === 'clientes' ? `
+                <span style="margin-left:auto;font-size:0.78rem;color:rgba(26,43,74,0.5);font-style:italic;">
+                    💡 Cambia el rol directamente con el botón <strong>🔄 Rol</strong>
+                </span>` : ''}
+            </div>
+
+            <!-- Tabla -->
             <div class="admin-table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -1006,23 +1172,31 @@ async function cargarUsuarios() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${usuarios.map(u => {
-                            const isActive = u.Estado === 1 || u.Estado === undefined; // Fallback si no tiene estado
-                            const statusIcon = isActive ? 'check-circle-2' : 'x-circle';
+                        ${usuarios.length === 0 ? `
+                        <tr><td colspan="9" style="text-align:center;padding:2rem;color:rgba(26,43,74,0.4);">
+                            No hay usuarios en este filtro.
+                        </td></tr>` :
+                        usuarios.map(u => {
+                            const isActive    = u.Estado === 1 || u.Estado === undefined;
+                            const esCliente   = u.IDRol === 1;
+                            const statusIcon  = isActive ? 'check-circle-2' : 'x-circle';
                             const statusClass = isActive ? 'btn-status-active' : 'btn-status-inactive';
                             const statusTitle = isActive ? 'Desactivar' : 'Activar';
+                            const rolNuevo    = esCliente ? 2 : 1;
+                            const rolLabel    = esCliente ? 'Promover a Admin' : 'Cambiar a Cliente';
+                            const rolIcon     = esCliente ? 'shield' : 'user';
 
                             return `
                             <tr>
                                 <td><span style="color:var(--color-acento);font-weight:600;">${u.IDUsuario}</span></td>
                                 <td style="color:#1A2B4A;font-weight:500;">${u.NombreUsuario}</td>
                                 <td>${u.Apellido || '-'}</td>
-                                <td>${u.Email}</td>
+                                <td style="font-size:0.83rem;">${u.Email}</td>
                                 <td>${u.Telefono || '-'}</td>
                                 <td>${u.Pais || '-'}</td>
                                 <td>
-                                    <span class="badge ${u.IDRol === 2 ? 'badge-completada' : 'badge-confirmada'}">
-                                        ${u.IDRol === 2 ? 'Admin' : 'Cliente'}
+                                    <span class="badge ${esCliente ? 'badge-confirmada' : 'badge-completada'}">
+                                        ${esCliente ? 'Cliente' : 'Admin'}
                                     </span>
                                 </td>
                                 <td>
@@ -1031,9 +1205,16 @@ async function cargarUsuarios() {
                                     </span>
                                 </td>
                                 <td>
-                                    <div style="display:flex; gap:8px;">
-                                        <button onclick="toggleEstadoUsuario('${u.IDUsuario}', ${u.Estado || 1})" class="btn-icon-admin ${statusClass}" title="${statusTitle}">
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <button onclick="toggleEstadoUsuario('${u.IDUsuario}', ${u.Estado ?? 1})"
+                                            class="btn-icon-admin ${statusClass}" title="${statusTitle}">
                                             <i data-lucide="${statusIcon}" style="width:16px;"></i>
+                                        </button>
+                                        <button onclick="cambiarRolUsuario('${u.IDUsuario}', ${rolNuevo}, '${u.NombreUsuario}', '${esCliente?'Cliente':'Admin'}')"
+                                            class="btn-icon-admin"
+                                            title="${rolLabel}"
+                                            style="background:${esCliente?'rgba(124,58,237,0.1)':'rgba(5,150,105,0.1)'};color:${esCliente?'#7c3aed':'#059669'};border:1.5px solid ${esCliente?'rgba(124,58,237,0.3)':'rgba(5,150,105,0.3)'};">
+                                            <i data-lucide="${rolIcon}" style="width:14px;"></i>
                                         </button>
                                         <button onclick="verDetalleUsuario('${u.IDUsuario}')" class="btn-icon-admin btn-view" title="Ver Detalle">
                                             <i data-lucide="eye" style="width:16px;"></i>
@@ -1051,12 +1232,18 @@ async function cargarUsuarios() {
                     </tbody>
                 </table>
             </div>`;
+
         if (window.lucide) lucide.createIcons({ parent: list });
     } catch (error) {
         list.innerHTML = '<p style="color:#ef4444; padding:2rem;">Error al cargar usuarios.</p>';
         console.error('Error cargando usuarios:', error);
     }
 }
+
+window.setUsuariosFiltro = (filtro) => {
+    _usuariosFiltro = filtro;
+    cargarUsuarios();
+};
 
 // ===== CLIENTES =====
 async function cargarClientes() {
@@ -1367,6 +1554,9 @@ window.editarCliente = async (id) => {
         document.getElementById('modalTitle').textContent = 'Editar Cliente';
         document.getElementById('modalContent').innerHTML = renderForm('clientes', data);
         document.getElementById('modalOverlay').classList.add('activo');
+        if (data.Pais === 'Colombia') {
+            window.adminCargarDepartamentos(data.Departamento, data.Municipio);
+        }
     } catch (e) { mostrarNotificacion('Error al cargar datos del cliente.', 'error'); }
 };
 
@@ -1397,7 +1587,8 @@ window.eliminarCliente = async (id) => {
                     cargarClientes();
                     mostrarNotificacion('Cliente eliminado correctamente.', 'success');
                 } else {
-                    mostrarNotificacion('No se pudo eliminar el cliente.', 'error');
+                    const err = await res.json().catch(() => ({}));
+                    mostrarNotificacion(err.error || 'No se pudo eliminar el cliente.', 'error');
                 }
             } catch (e) {
                 mostrarNotificacion('Error de conexión al servidor.', 'error');
@@ -1903,7 +2094,7 @@ async function cargarServicios() {
                     const imgUrl      = s.imagen || 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=80';
                     return `
                         <article class="room-card">
-                            <img src="${imgUrl}" alt="${s.NombreServicio || s.nombre || 'Servicio'}" />
+                            <img src="${imgUrl}" alt="${s.NombreServicio || s.nombre || 'Servicio'}" onerror="this.src='https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=80'" />
                             <div class="room-card-body">
                                 <div>
                                     <h3>${s.NombreServicio || s.nombre || 'Servicio'}</h3>
@@ -2227,13 +2418,13 @@ function renderGraficaReservas(reservas) {
             labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
             datasets: [
                 {
-                    label: 'Check-ins',
+                    label: 'Entradas',
                     data: checkins,
                     backgroundColor: '#10b981',
                     borderRadius: 4
                 },
                 {
-                    label: 'Check-outs',
+                    label: 'Salidas',
                     data: checkouts,
                     backgroundColor: '#3182CE',
                     borderRadius: 4
@@ -2395,6 +2586,31 @@ window.toggleEstadoUsuario = async (id, actual) => {
             mostrarNotificacion('Error al cambiar el estado del usuario.', 'error');
         }
     } catch (e) { mostrarNotificacion('Error de conexión.', 'error'); }
+};
+
+window.cambiarRolUsuario = async (id, nuevoRol, nombre, rolActualLabel) => {
+    const nuevoLabel = nuevoRol === 2 ? 'Administrador' : 'Cliente';
+    const accion     = nuevoRol === 2 ? 'le dará acceso al panel de administración' : 'quitará el acceso de administrador';
+    mostrarConfirmacion(
+        `¿Cambiar rol de "${nombre}"?`,
+        `Esta acción ${accion}.\n\nRol actual: ${rolActualLabel}  →  Nuevo rol: ${nuevoLabel}`,
+        async () => {
+            try {
+                const res = await fetch(`/api/usuarios/${id}/rol`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ IDRol: nuevoRol })
+                });
+                if (res.ok) {
+                    cargarUsuarios();
+                    mostrarNotificacion(`Rol de "${nombre}" actualizado a ${nuevoLabel}.`, 'success');
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    mostrarNotificacion(err.error || 'Error al cambiar el rol.', 'error');
+                }
+            } catch (e) { mostrarNotificacion('Error de conexión.', 'error'); }
+        }
+    );
 };
 
 window.editarUsuario = async (id) => {
@@ -2602,6 +2818,70 @@ window.calcularPrecioPaquete = () => {
     }
 };
 
+// ─── Helpers API Colombia — modal Clientes ────────────────────────────────────
+const _API_COL = 'https://api-colombia.com/api/v1';
+
+window.adminToggleColombia = (paisValue) => {
+    const cont = document.getElementById('cliente-col-fields');
+    if (!cont) return;
+    const esColombia = paisValue === 'Colombia';
+    cont.style.display = esColombia ? 'contents' : 'none';
+    if (esColombia) window.adminCargarDepartamentos();
+};
+
+window.adminCargarDepartamentos = async (valorActual, municipioActual) => {
+    const sel = document.getElementById('admin-dep-select');
+    if (!sel) return;
+    sel.disabled = true;
+    sel.innerHTML = '<option value="" disabled selected>Cargando departamentos...</option>';
+    try {
+        const res = await fetch(`${_API_COL}/Department`);
+        const deps = await res.json();
+        deps.sort((a, b) => a.name.localeCompare(b.name));
+        sel.innerHTML = '<option value="" disabled selected>Selecciona departamento...</option>';
+        let depIdActual = null;
+        deps.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.name;
+            opt.dataset.id = d.id;
+            opt.textContent = d.name;
+            if (valorActual && d.name === valorActual) { opt.selected = true; depIdActual = d.id; }
+            sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        if (depIdActual) window.adminCargarMunicipios(sel, municipioActual);
+    } catch {
+        sel.innerHTML = '<option value="" disabled selected>Error al cargar</option>';
+        sel.disabled = false;
+    }
+};
+
+window.adminCargarMunicipios = async (selEl, municipioActual) => {
+    const depId = selEl.options[selEl.selectedIndex]?.dataset?.id;
+    if (!depId) return;
+    const munSel = document.getElementById('admin-mun-select');
+    if (!munSel) return;
+    munSel.disabled = true;
+    munSel.innerHTML = '<option value="" disabled selected>Cargando municipios...</option>';
+    try {
+        const res = await fetch(`${_API_COL}/Department/${depId}/cities`);
+        const cities = await res.json();
+        cities.sort((a, b) => a.name.localeCompare(b.name));
+        munSel.innerHTML = '<option value="" disabled selected>Selecciona municipio...</option>';
+        cities.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            if (municipioActual && c.name === municipioActual) opt.selected = true;
+            munSel.appendChild(opt);
+        });
+        munSel.disabled = false;
+    } catch {
+        munSel.innerHTML = '<option value="" disabled selected>Error al cargar</option>';
+        munSel.disabled = false;
+    }
+};
+
 function renderForm(section, data = null, extra = {}) {
     const isEdit = !!data;
     let fields = '';
@@ -2642,33 +2922,69 @@ function renderForm(section, data = null, extra = {}) {
             break;
         case 'clientes':
             fields = `
+                ${!isEdit ? `
+                <div class="form-group" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(49,130,206,0.08),rgba(49,130,206,0.04));border:1px solid rgba(49,130,206,0.25);border-radius:8px;padding:12px 16px;">
+                    <p style="margin:0;font-size:0.82rem;color:#2B6CB0;line-height:1.5;">
+                        📧 <strong>Nota:</strong> Al crear el cliente se le enviará un correo electrónico para que establezca su contraseña de acceso.
+                    </p>
+                </div>` : ''}
                 <div class="form-group">
-                    <label>🆔 NRO DOCUMENTO</label>
-                    <input type="text" name="NroDocumento" value="${data?.NroDocumento || ''}" pattern="\\d+" title="Solo debe contener números." required>
-                    <span class="field-error" id="err-NroDocumento"></span>
-                </div>
-                <div class="form-group">
-                    <label>📞 TELÉFONO</label>
-                    <input type="text" name="Telefono" value="${data?.Telefono || ''}" pattern="\\d+" title="Solo debe contener números.">
-                    <span class="field-error" id="err-Telefono"></span>
-                </div>
-                <div class="form-group">
-                    <label>👤 NOMBRE</label>
+                    <label>👤 NOMBRE(S)</label>
                     <input type="text" name="Nombre" value="${data?.Nombre || ''}" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\\s]+" title="Solo debe contener letras y espacios." required>
                     <span class="field-error" id="err-Nombre"></span>
                 </div>
                 <div class="form-group">
-                    <label>👤 APELLIDO</label>
+                    <label>👤 APELLIDO(S)</label>
                     <input type="text" name="Apellido" value="${data?.Apellido || ''}" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\\s]+" title="Solo debe contener letras y espacios.">
                     <span class="field-error" id="err-Apellido"></span>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="grid-column:1/-1;">
+                    <label>🪪 DOCUMENTO</label>
+                    <div style="display:flex;gap:0.5rem;align-items:stretch;">
+                        <select name="TipoDocumento" style="width:72px;min-width:72px;max-width:72px;flex-shrink:0;padding:0.45rem 0.3rem;font-size:0.8rem;font-weight:600;border:1.5px solid rgba(123,82,171,0.58);background:#F5F0FF;border-radius:7px;color:#1A2B4A;cursor:pointer;appearance:auto;">
+                            <option value="CC"  ${data?.TipoDocumento === 'CC'  ? 'selected' : ''}>CC</option>
+                            <option value="CE"  ${data?.TipoDocumento === 'CE'  ? 'selected' : ''}>CE</option>
+                            <option value="PA"  ${data?.TipoDocumento === 'PA'  ? 'selected' : ''}>PA</option>
+                            <option value="NIT" ${data?.TipoDocumento === 'NIT' ? 'selected' : ''}>NIT</option>
+                        </select>
+                        <input type="text" name="NroDocumento" value="${data?.NroDocumento || ''}" placeholder="Ej. 1234567890" pattern="\\d+" title="Solo debe contener números." style="flex:1;min-width:0;" required>
+                    </div>
+                    <span class="field-error" id="err-NroDocumento"></span>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;">
                     <label>📧 EMAIL</label>
                     <input type="email" name="Email" value="${data?.Email || data?.Correo || ''}" required>
                 </div>
                 <div class="form-group">
+                    <label>🌍 PAÍS</label>
+                    <select name="Pais" onchange="adminToggleColombia(this.value)" style="width:100%;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid rgba(49,130,206,0.35);border-radius:7px;color:#1A2B4A;background:#fff;cursor:pointer;">
+                        <option value="">Selecciona país...</option>
+                        ${['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','China','Colombia','Costa Rica','Cuba','Ecuador','Egipto','Emiratos Árabes Unidos','España','Estados Unidos','Finlandia','Francia','Guatemala','Honduras','India','Italia','Japón','México','Marruecos','Nigeria','Noruega','Nueva Zelanda','Países Bajos','Panamá','Paraguay','Perú','Portugal','Reino Unido','Rusia','Sudáfrica','Suecia','Suiza','Turquía','Uruguay','Venezuela']
+                            .map(p => `<option value="${p}" ${data?.Pais === p ? 'selected' : ''}>${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📞 TELÉFONO</label>
+                    <input type="text" name="Telefono" value="${data?.Telefono || ''}" pattern="\\d+" title="Solo debe contener números." placeholder="Ej. 3001234567">
+                    <span class="field-error" id="err-Telefono"></span>
+                </div>
+                <div id="cliente-col-fields" style="display:${data?.Pais === 'Colombia' ? 'contents' : 'none'};">
+                    <div class="form-group">
+                        <label>🗺️ DEPARTAMENTO</label>
+                        <select name="Departamento" id="admin-dep-select" onchange="adminCargarMunicipios(this)" style="width:100%;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid rgba(49,130,206,0.35);border-radius:7px;color:#1A2B4A;background:#fff;cursor:pointer;" disabled>
+                            <option value="" disabled selected>Selecciona departamento...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🏙️ CIUDAD / MUNICIPIO</label>
+                        <select name="Municipio" id="admin-mun-select" style="width:100%;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid rgba(49,130,206,0.35);border-radius:7px;color:#1A2B4A;background:#fff;cursor:pointer;" disabled>
+                            <option value="" disabled selected>Selecciona primero un departamento</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;">
                     <label>📍 DIRECCIÓN</label>
-                    <input type="text" name="Direccion" value="${data?.Direccion || ''}">
+                    <input type="text" name="Direccion" value="${data?.Direccion || ''}" placeholder="Calle 123 #45-67, Ciudad">
                 </div>
                 ${isEdit ? '<input type="hidden" name="Estado" value="' + (data?.Estado ?? 1) + '">' : ''}
                 ${isEdit ? '<input type="hidden" name="IDRol" value="' + (data?.IDRol ?? 1) + '">' : ''}`;
