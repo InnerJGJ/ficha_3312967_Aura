@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-console.log('ENV | RESEND_API_KEY:', !!process.env.RESEND_API_KEY);
+console.log('ENV | BREVO_API_KEY:', !!process.env.BREVO_API_KEY);
 console.log('ENV | DB_HOST:', process.env.DB_HOST || '(no definido)');
 console.log('ENV | DB_PORT:', process.env.DB_PORT || '(no definido)');
 console.log('ENV | DB_USER:', process.env.DB_USER || '(no definido)');
