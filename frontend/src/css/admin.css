@@ -2985,3 +2985,77 @@ a.admin-nav-item                  { color: rgba(26, 43, 74, 0.85) !important; }
 /* ── Etiquetas de formularios en modales ── */
 .modal-body .form-group label,
 .modal-body label                 { color: rgba(26, 43, 74, 0.72) !important; }
+
+/* ══════════════════════════════════════════════════════════
+   COMPROBANTE DE RESERVA — estilo factura (inv-*)
+   ══════════════════════════════════════════════════════════ */
+.inv-wrap { background:#fff; color:#1A2B4A; width:100%; box-sizing:border-box; }
+
+/* Header */
+.inv-header { display:flex; justify-content:space-between; align-items:flex-start; padding:1.4rem 1.75rem 1.1rem; border-bottom:1px solid #e8eef5; }
+.inv-brand   { display:flex; align-items:center; gap:0.7rem; }
+.inv-brand__logo { width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#2B6CB0,#0D9488);color:#fff;font-size:1.1rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.inv-brand__name { font-size:0.95rem; font-weight:800; color:#1A2B4A; line-height:1.2; }
+.inv-brand__sub  { font-size:0.68rem; color:rgba(26,43,74,0.45); }
+.inv-title-block { text-align:right; }
+.inv-doc-type    { font-size:0.6rem; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:rgba(26,43,74,0.45); }
+.inv-number      { font-size:1.15rem; font-weight:800; color:#1A2B4A; margin-top:1px; }
+.inv-issue-date  { font-size:0.76rem; color:rgba(26,43,74,0.5); margin-top:2px; }
+
+/* Info bar 2 columnas */
+.inv-info { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #e8eef5; }
+.inv-info__col { padding:0.9rem 1.75rem; }
+.inv-info__col:first-child { border-right:1px solid #e8eef5; }
+.inv-info__label { font-size:0.6rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:rgba(26,43,74,0.4); margin-bottom:0.35rem; }
+.inv-info__value { font-size:0.88rem; font-weight:600; color:#1A2B4A; line-height:1.4; }
+.inv-info__sub   { font-size:0.74rem; color:rgba(26,43,74,0.55); margin-top:2px; }
+.inv-info__row   { display:flex; gap:1.2rem; flex-wrap:wrap; margin-top:0.3rem; }
+.inv-info__row span { font-size:0.78rem; color:rgba(26,43,74,0.65); }
+.inv-info__row b { color:#1A2B4A; }
+.inv-status { display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid;text-transform:uppercase;letter-spacing:0.05em;margin-top:0.3rem; }
+
+/* Tabla de ítems */
+.inv-table-wrap { padding:0 1.75rem 0.5rem; }
+.inv-table      { width:100%; border-collapse:collapse; }
+.inv-table thead th { font-size:0.6rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:rgba(26,43,74,0.4); padding:0.7rem 0.4rem 0.5rem; border-bottom:2px solid #e8eef5; text-align:left; }
+.inv-table thead th.r { text-align:right; }
+.inv-table tbody tr td { padding:0.55rem 0.4rem; font-size:0.83rem; border-bottom:1px solid rgba(49,130,206,0.07); vertical-align:top; }
+.inv-table tbody tr:last-child td { border-bottom:none; }
+.inv-table tbody tr.inv-tr--aloj td { background:rgba(49,130,206,0.03); }
+.inv-td__name   { font-weight:600; color:#1A2B4A; }
+.inv-td__detail { font-size:0.7rem; color:rgba(26,43,74,0.45); margin-top:2px; }
+.inv-td--r  { text-align:right; color:rgba(26,43,74,0.7); }
+.inv-td--rw { text-align:right; font-weight:600; color:#1A2B4A; }
+
+/* Separador sección adicional */
+.inv-sep { margin:0.4rem 1.75rem 0; padding:0.5rem 0 0.2rem; border-top:1px dashed rgba(245,158,11,0.5); }
+.inv-sep__label { font-size:0.6rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#b45309; }
+
+/* Bloque de totales */
+.inv-totals { display:flex; flex-direction:column; align-items:flex-end; padding:0.8rem 1.75rem 0.65rem; border-top:2px solid #e8eef5; gap:0.28rem; }
+.inv-totals__row { display:flex; justify-content:space-between; width:260px; font-size:0.83rem; color:rgba(26,43,74,0.65); }
+.inv-totals__row b { color:rgba(26,43,74,0.85); font-weight:600; }
+.inv-totals__divider { width:260px; border:none; border-top:1.5px solid #1A2B4A; margin:0.25rem 0; }
+.inv-totals__grand { display:flex; justify-content:space-between; width:260px; font-size:1rem; font-weight:800; color:#1A2B4A; }
+.inv-totals__warn { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.35); border-radius:8px; padding:0.45rem 0.75rem; margin-top:0.4rem; font-size:0.78rem; color:#92620a; width:auto; max-width:300px; text-align:right; }
+.inv-totals__acum { display:flex; justify-content:space-between; width:260px; font-size:0.95rem; font-weight:800; color:#b45309; margin-top:0.2rem; }
+
+/* Footer acciones */
+.inv-footer { display:flex; gap:0.55rem; justify-content:flex-end; align-items:center; padding:0.9rem 1.75rem; border-top:1px solid #e8eef5; }
+.inv-btn { font-size:0.78rem; font-weight:600; padding:0.45rem 1rem; border-radius:8px; cursor:pointer; border:none; transition:all .15s; }
+.inv-btn--primary   { background:#2B6CB0; color:#fff; }
+.inv-btn--primary:hover { background:#245a99; }
+.inv-btn--outline   { background:none; color:#2B6CB0; border:1.5px solid rgba(43,108,176,0.35); }
+.inv-btn--outline:hover { background:rgba(43,108,176,0.07); }
+.inv-btn--ghost     { background:none; color:rgba(26,43,74,0.45); border:1px solid rgba(26,43,74,0.15); }
+.inv-btn--ghost:hover { background:rgba(26,43,74,0.05); }
+
+@media print {
+  .inv-footer, .modal-overlay, .modal-content { box-shadow:none !important; }
+  .inv-footer { display:none; }
+}
+@media (max-width:580px) {
+  .inv-info { grid-template-columns:1fr; }
+  .inv-info__col:first-child { border-right:none; border-bottom:1px solid #e8eef5; }
+  .inv-totals__row, .inv-totals__grand, .inv-totals__acum, .inv-totals__divider { width:100%; }
+}

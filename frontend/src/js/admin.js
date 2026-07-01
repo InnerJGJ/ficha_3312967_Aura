@@ -608,124 +608,112 @@ window.verDetalleReserva = async (id) => {
             : null;
         const montoTotalReal = Number(r.MontoTotal || 0) + montoAdicionalPend;
 
-        document.getElementById('detalleTitulo').textContent = `Detalle de Reserva #${r.IdReserva}`;
+        document.getElementById('detalleTitulo').textContent = `Comprobante #${String(r.IdReserva).padStart(6,'0')}`;
         document.getElementById('detalleContent').style.padding = '0';
-        const modalBox = document.querySelector('#detalleModalOverlay .modal-box-ver');
-        if (modalBox) modalBox.classList.remove('modal-box--wide');
 
-        document.getElementById('detalleContent').innerHTML = `
-        <div class="rd-wrap">
+        const noches = (r.FechaInicio && r.FechaFinalizacion)
+            ? Math.max(1, Math.round((new Date(r.FechaFinalizacion) - new Date(r.FechaInicio)) / 86400000))
+            : 1;
+        const totalServOrigA = serviciosOriginales.reduce((s, x) => s + Number(x.Subtotal || (Number(x.PrecioUnitario||0) * Number(x.Cantidad||1))), 0);
+        const alojTotal = Math.max(0, Number(r.SubTotal || 0) - totalServOrigA);
+        const alojUnit  = noches > 0 ? Math.round(alojTotal / noches) : alojTotal;
+        const idNum = String(r.IdReserva || '').padStart(6, '0');
 
-          <!-- FRANJA DE RESUMEN HORIZONTAL -->
-          <div class="rd-hero" style="border-top: 3px solid ${cfg.color};">
-            <div class="rd-hero__left">
-              <span class="rd-badge" style="color:${cfg.color}; background:${cfg.bg}; border-color:${cfg.color}44;">
-                <i data-lucide="${cfg.icon}" style="width:12px;height:12px;"></i>
-                ${r.NombreEstadoReserva || '—'}
-              </span>
-              <div class="rd-hero__id"># ${r.IdReserva}</div>
+        const trSrvAdmin = (s, esAdic) => {
+            const pu  = Number(s.PrecioUnitario || s.Costo || 0);
+            const qty = Number(s.Cantidad || 1);
+            const tot = Number(s.Subtotal || (pu * qty));
+            const badge = esAdic
+                ? (s.Pagado
+                    ? `<span style="font-size:0.65rem;background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 5px;font-weight:600;margin-left:6px;">Pagado</span>`
+                    : `<span style="font-size:0.65rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:600;margin-left:6px;">Pendiente</span>`)
+                : '';
+            return `<tr>
+              <td><div class="inv-td__name">${s.NombreServicio || '—'}${badge}</div><div class="inv-td__detail">Servicio</div></td>
+              <td class="inv-td--r">${qty}</td>
+              <td class="inv-td--r">$${pu.toLocaleString('es-CO')}</td>
+              <td class="inv-td--rw"${esAdic ? ' style="color:#b45309;"' : ''}>$${tot.toLocaleString('es-CO')}</td>
+            </tr>`;
+        };
+
+        document.getElementById('detalleContent').innerHTML = `<div class="inv-wrap">
+
+          <div class="inv-header">
+            <div class="inv-brand">
+              <div class="inv-brand__logo">AT</div>
+              <div>
+                <div class="inv-brand__name">Aura Travel</div>
+                <div class="inv-brand__sub">Reservas &amp; Alojamiento</div>
+              </div>
             </div>
-            <div class="rd-hero__center">
-              <span class="rd-hero__label">${montoAdicionalPend > 0 ? 'Total acumulado' : 'Total a pagar'}</span>
-              <span class="rd-hero__amount" style="color:#1A2B4A;">
-                <span style="color:#10b981;">$</span>${montoTotalReal.toLocaleString('es-CO')}
-              </span>
-              ${montoAdicionalPend > 0 ? `<span style="font-size:0.7rem;color:#6b7280;margin-top:2px;">Original: $${Number(r.MontoTotal||0).toLocaleString('es-CO')} + Adicional: $${montoAdicionalPend.toLocaleString('es-CO')}</span>` : ''}
-            </div>
-            <div class="rd-hero__right">
-              <span class="rd-hero__label">Reservado el</span>
-              <span class="rd-hero__date">${fmt(r.FechaReserva || null)}</span>
+            <div class="inv-title-block">
+              <div class="inv-doc-type">Comprobante de Reserva</div>
+              <div class="inv-number"># ${idNum}</div>
+              <div class="inv-issue-date">Emitido: ${fmt(r.FechaReserva || null)}</div>
             </div>
           </div>
 
-          <!-- GRID DE DATOS 2x2 -->
-          <div class="rd-grid">
-
-            <!-- CLIENTE -->
-            <div class="rd-card">
-              <div class="rd-card__icon" style="background:rgba(123,47,247,0.15); border-color:rgba(123,47,247,0.3); color:#9b59f5;">
-                <i data-lucide="user" style="width:16px;height:16px;"></i>
-              </div>
-              <div class="rd-card__content">
-                <span class="rd-card__label">Cliente</span>
-                <span class="rd-card__value">${r.NombreUsuario || '—'}</span>
-                <span class="rd-card__sub">${r.NroDocumentoCliente ? 'Doc: ' + r.NroDocumentoCliente : ''}</span>
-              </div>
+          <div class="inv-info">
+            <div class="inv-info__col">
+              <div class="inv-info__label">Emitido a</div>
+              <div class="inv-info__value">${r.NombreUsuario || '—'}</div>
+              ${r.NroDocumentoCliente ? `<div class="inv-info__sub">Doc: ${r.NroDocumentoCliente}</div>` : ''}
             </div>
-
-            <!-- ALOJAMIENTO -->
-            <div class="rd-card">
-              <div class="rd-card__icon" style="background:rgba(49,130,206,0.12); border-color:rgba(49,130,206,0.3); color:#2B6CB0;">
-                <i data-lucide="home" style="width:16px;height:16px;"></i>
+            <div class="inv-info__col">
+              <div class="inv-info__label">Detalles de la reserva</div>
+              <span class="inv-status" style="color:${cfg.color};border-color:${cfg.color}44;background:${cfg.bg};">${r.NombreEstadoReserva || '—'}</span>
+              <div class="inv-info__row"><span><b>Alojamiento:</b> ${alojamiento} (${alojamiento === r.NombrePaquete ? 'Paquete' : alojamiento === r.NombreCabana ? 'Cabaña' : 'Habitación'})</span></div>
+              <div class="inv-info__row">
+                <span><b>Entrada:</b> ${fmt(r.FechaInicio)}</span>
+                <span><b>Salida:</b> ${fmt(r.FechaFinalizacion)}</span>
               </div>
-              <div class="rd-card__content">
-                <span class="rd-card__label">Alojamiento</span>
-                <span class="rd-card__value">${alojamiento}</span>
-                <span class="rd-card__sub">${r.NombrePaquete ? 'Paquete' : r.NombreCabana ? 'Cabaña' : 'Habitación'}</span>
-              </div>
+              <div class="inv-info__row"><span><b>Pago:</b> ${r.NomMetodoPago || '—'}</span></div>
             </div>
-
-            <!-- ESTADIA -->
-            <div class="rd-card">
-              <div class="rd-card__icon" style="background:rgba(16,185,129,0.12); border-color:rgba(16,185,129,0.3); color:#10b981;">
-                <i data-lucide="calendar-range" style="width:16px;height:16px;"></i>
-              </div>
-              <div class="rd-card__content">
-                <span class="rd-card__label">Estadía</span>
-                <div class="rd-dates">
-                  <span><i data-lucide="log-in" style="width:11px;color:#10b981;"></i> ${fmt(r.FechaInicio)}</span>
-                  <span style="color:rgba(26,43,74,0.35);">→</span>
-                  <span><i data-lucide="log-out" style="width:11px;color:#ef4444;"></i> ${fmt(r.FechaFinalizacion)}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- PAGO -->
-            <div class="rd-card">
-              <div class="rd-card__icon" style="background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.3); color:#f59e0b;">
-                <i data-lucide="credit-card" style="width:16px;height:16px;"></i>
-              </div>
-              <div class="rd-card__content">
-                <span class="rd-card__label">Método de pago</span>
-                <span class="rd-card__value">${r.NomMetodoPago || '—'}</span>
-                <div class="rd-amounts">
-                  <span>Subtotal: <b>${montoFmt(r.SubTotal)}</b></span>
-                  ${r.Descuento ? `<span>Dto: <b>${r.Descuento}%</b></span>` : ''}
-                  ${r.IVA ? `<span>IVA: <b>${r.IVA}%</b></span>` : ''}
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /rd-grid -->
-
-          <!-- AVISO PAGO ADICIONAL PENDIENTE -->
-          ${montoAdicionalPend > 0 ? `
-          <div style="margin:0.75rem 1rem 0;padding:0.75rem 1rem;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.45);border-radius:10px;display:flex;align-items:flex-start;gap:0.6rem;">
-            <i data-lucide="alert-triangle" style="width:18px;flex-shrink:0;color:#b45309;margin-top:1px;"></i>
-            <div style="font-size:0.8rem;color:#92400e;line-height:1.5;">
-              <strong>Servicios adicionales pendientes de pago: $${montoAdicionalPend.toLocaleString('es-CO')}</strong><br>
-              Estos servicios fueron agregados durante la estadía y deben cancelarse antes o durante el check-out para poder completar la reserva.
-            </div>
-          </div>` : ''}
-
-          <!-- SERVICIOS INCLUIDOS EN LA RESERVA -->
-          <div class="rd-section">
-            <span class="rd-section__label">
-              <i data-lucide="sparkles" style="width:13px; color:var(--color-acento);"></i>
-              Servicios incluidos en la reserva
-            </span>
-            <div class="rd-tags">${serviciosOrigHtml}</div>
           </div>
 
-          <!-- SERVICIOS AGREGADOS DURANTE LA ESTADÍA -->
-          ${serviciosEnProcHtml ? `
-          <div class="rd-section">
-            <span class="rd-section__label">
-              <i data-lucide="plus-circle" style="width:13px; color:#b45309;"></i>
-              Servicios agregados durante la estadía
-            </span>
-            <div class="rd-tags">${serviciosEnProcHtml}</div>
+          <div class="inv-table-wrap">
+            <table class="inv-table">
+              <thead>
+                <tr><th>Descripción</th><th class="r">Cant.</th><th class="r">P. Unit.</th><th class="r">Total</th></tr>
+              </thead>
+              <tbody>
+                <tr class="inv-tr--aloj">
+                  <td>
+                    <div class="inv-td__name">${alojamiento}</div>
+                    <div class="inv-td__detail">${r.NombrePaquete ? 'Paquete' : r.NombreCabana ? 'Cabaña' : 'Habitación'} · ${noches} noche${noches !== 1 ? 's' : ''}</div>
+                  </td>
+                  <td class="inv-td--r">${noches}</td>
+                  <td class="inv-td--r">$${alojUnit.toLocaleString('es-CO')}</td>
+                  <td class="inv-td--rw">$${alojTotal.toLocaleString('es-CO')}</td>
+                </tr>
+                ${serviciosOriginales.map(s => trSrvAdmin(s, false)).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          ${serviciosEnProceso.length > 0 ? `
+          <div class="inv-sep"><div class="inv-sep__label">Servicios agregados durante la estadía</div></div>
+          <div class="inv-table-wrap">
+            <table class="inv-table"><tbody>
+              ${serviciosEnProceso.map(s => trSrvAdmin(s, true)).join('')}
+            </tbody></table>
           </div>` : ''}
+
+          <div class="inv-totals">
+            <div class="inv-totals__row"><span>Subtotal:</span><b>${montoFmt(r.SubTotal)}</b></div>
+            <div class="inv-totals__row"><span>IVA (19%):</span><b>${montoFmt(r.IVA)}</b></div>
+            <hr class="inv-totals__divider">
+            <div class="inv-totals__grand"><span>Total:</span><span>${montoFmt(r.MontoTotal)}</span></div>
+            ${montoAdicionalPend > 0 ? `
+            <div class="inv-totals__warn">⚠️ $${montoAdicionalPend.toLocaleString('es-CO')} en servicios pendientes de pago al check-out</div>
+            <div class="inv-totals__acum"><span>Total acumulado:</span><span>$${montoTotalReal.toLocaleString('es-CO')}</span></div>` : ''}
+          </div>
+
+          <div class="inv-footer">
+            <button class="inv-btn inv-btn--ghost" onclick="window.print()">Imprimir</button>
+            <button class="inv-btn inv-btn--primary" onclick="editarReserva(${r.IdReserva});cerrarDetalle();">Editar Reserva</button>
+            <button class="inv-btn inv-btn--outline" onclick="cerrarDetalle()">Cerrar</button>
+          </div>
 
         </div>`;
 
