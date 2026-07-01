@@ -2834,7 +2834,13 @@ window.calcularPrecioPaquete = () => {
     servCheckboxes.forEach(chk => {
         subtotal += Number(chk.dataset.precio || 0);
     });
-    
+
+    // Sincronizar campo oculto IDServicio
+    const hiddenIdServicio = document.getElementById('input-idservicio');
+    if (hiddenIdServicio) {
+        hiddenIdServicio.value = Array.from(servCheckboxes).map(c => c.value).join(',');
+    }
+
     // Descuento
     const descInput = document.getElementById('input-descuento');
     const precioFinalInput = document.getElementById('input-precio-final');
@@ -3157,6 +3163,7 @@ function renderForm(section, data = null, extra = {}) {
                 </div>
                 <div class="form-group" style="grid-column:1/-1;">
                     <label>🛠️ SERVICIOS INCLUIDOS</label>
+                    <input type="hidden" name="IDServicio" id="input-idservicio" value="${selectedServices.join(',')}">
                     <div id="checkboxes-servicios" style="background-color:#f0f7ff;border:1px solid rgba(49,130,206,0.18);border-radius:8px;padding:8px;max-height:90px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;">
                         ${(extra.servicios || []).map(s => `
                             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;margin:0;padding:2px;border-radius:4px;">
