@@ -63,6 +63,11 @@ const runMigrations = async () => {
       }
     }
 
+    // IDServicio en paquetes debe ser VARCHAR(255) para guardar "1,3,7" etc.
+    await db.query(`
+      ALTER TABLE paquetes MODIFY COLUMN IDServicio VARCHAR(255) NULL DEFAULT NULL
+    `).catch(() => {}); // silenciar si ya es compatible
+
     console.log('[migration] all migrations OK');
   } catch (err) {
     console.error('[migration] Error:', err.message);
