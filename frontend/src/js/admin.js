@@ -3122,7 +3122,7 @@ function renderForm(section, data = null, extra = {}) {
                 }`;
             break;
         case 'paquetes':
-            const selectedServices = (data?.IDServicio || '').toString().split(',');
+            const selectedServices = (data?.IDServicio || '').toString().split(',').map(s => s.trim()).filter(Boolean);
             fields = `
                 <div class="form-group" style="grid-column:1/-1;">
                     <label>📦 NOMBRE PAQUETE</label>
@@ -3310,7 +3310,7 @@ function renderForm(section, data = null, extra = {}) {
         }
 
         // Conversión de tipos para números
-        ['precio', 'PrecioNoche', 'CapacidadPersonas', 'CantidadMaximaPersonas', 'NumeroHabitaciones', 'IDHabitacion', 'IDServicio', 'IDCabana', 'IDRol', 'Estado'].forEach(key => {
+        ['precio', 'PrecioNoche', 'CapacidadPersonas', 'CantidadMaximaPersonas', 'NumeroHabitaciones', 'IDHabitacion', 'IDCabana', 'IDRol', 'Estado'].forEach(key => {
             if (body[key] !== undefined && body[key] !== '') body[key] = Number(body[key]);
         });
 
