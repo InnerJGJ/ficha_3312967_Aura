@@ -3254,14 +3254,20 @@ function renderForm(section, data = null, extra = {}) {
         const formData = new FormData(e.target);
         const body = Object.fromEntries(formData.entries());
         
-        // Fix explícito para Descripcion en paquetes en caso de que FormData falle
         if (section === 'paquetes') {
             const descrEl = document.getElementById('paquete-descripcion-admin');
-            if (descrEl) {
-                body.Descripcion = descrEl.value.trim();
+            if (descrEl) body.Descripcion = descrEl.value.trim();
+            // IDServicio: usar el campo oculto (sincronizado por calcularPrecioPaquete)
+            // El FormData ya lo trae, pero lo leemos explícitamente para asegurar null si vacío
+            const hiddenInput = document.getElementById('input-idservicio');
+            if (hiddenInput !== null) {
+                body.IDServicio = hiddenInput.value || null;
             }
-            const checkboxes = document.querySelectorAll('input[name="IDServicioCheckbox"]:checked');
-            body.IDServicio = Array.from(checkboxes).map(c => c.value).join(',') || null;
+            // Si por alguna razón el hidden input no existe, leer los checkboxes directamente
+            else {
+                const cbs = document.querySelectorAll('input[name="IDServicioCheckbox"]:checked');
+                body.IDServicio = Array.from(cbs).map(c => c.value).join(',') || null;
+            }
         }
 
         // Limpiar errores previos
