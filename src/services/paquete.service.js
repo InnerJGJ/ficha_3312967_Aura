@@ -51,14 +51,12 @@ const create = async (data) => {
 };
 
 const update = async (id, data) => {
-    console.log(`[paquete.update #${id}] IDServicio recibido:`, JSON.stringify(data.IDServicio), '| tipo:', typeof data.IDServicio);
     const nombre = data.NombrePaquete || data.nombre || '';
     const Descripcion = data.Descripcion || data.descripcion || '';
     const IDHabitacion = data.IDHabitacion || null;
     const IDCabana = data.IDCabana || null;
     let IDServicio = data.IDServicio || null;
     if (Array.isArray(IDServicio)) IDServicio = IDServicio.join(',');
-    console.log(`[paquete.update #${id}] IDServicio a guardar en BD:`, JSON.stringify(IDServicio));
     const Precio = data.Precio || data.precio || 0;
     const Descuento = data.Descuento || 0;
     const TipoDescuento = data.TipoDescuento || 'porcentaje';
