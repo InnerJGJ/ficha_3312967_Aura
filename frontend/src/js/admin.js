@@ -841,16 +841,16 @@ window.editarReserva = async (id) => {
         const fmt = f => f ? new Date(f).toISOString().split('T')[0] : '';
         const esEnProceso = r.IdEstadoReserva === 5;
 
-        // Determinar tipo de alojamiento y paquete adicional.
-        // Habitación/cabaña tienen prioridad; el paquete puede ser standalone o adicional.
+        // FIX: Usar IDHabitacionDirecta (NULL si la reserva es solo paquete) para
+        // evitar que la habitación interna del paquete se interprete como habitación directa.
         let tipoActual = 'habitacion';
         let idAlojActual = null;
         let idPaqueteAdicional = null;
         if (r.IDCabana) {
             tipoActual = 'cabana';     idAlojActual = r.IDCabana;
             idPaqueteAdicional = r.IDPaquete || null;
-        } else if (r.IDHabitacion) {
-            tipoActual = 'habitacion'; idAlojActual = r.IDHabitacion;
+        } else if (r.IDHabitacionDirecta) {
+            tipoActual = 'habitacion'; idAlojActual = r.IDHabitacionDirecta;
             idPaqueteAdicional = r.IDPaquete || null;
         } else if (r.IDPaquete) {
             tipoActual = 'paquete';    idAlojActual = r.IDPaquete;

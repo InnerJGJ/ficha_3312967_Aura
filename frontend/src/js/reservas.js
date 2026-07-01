@@ -465,11 +465,14 @@ function populateEditForm(reservation) {
     let idAlojActual = null;
     let idPaqueteAdicional = null;
 
+    // FIX: Usar IDHabitacionDirecta (NULL si la reserva es solo paquete) para
+    // evitar que la habitación interna del paquete se interprete como habitación directa
+    // y duplique el costo en el cálculo del total.
     if (reservation.IDCabana) {
         tipoActual = 'cabana';     idAlojActual = reservation.IDCabana;
         idPaqueteAdicional = reservation.IDPaquete || null;
-    } else if (reservation.IDHabitacion) {
-        tipoActual = 'habitacion'; idAlojActual = reservation.IDHabitacion;
+    } else if (reservation.IDHabitacionDirecta) {
+        tipoActual = 'habitacion'; idAlojActual = reservation.IDHabitacionDirecta;
         idPaqueteAdicional = reservation.IDPaquete || null;
     } else if (reservation.IDPaquete) {
         tipoActual = 'paquete';    idAlojActual = reservation.IDPaquete;

@@ -15,10 +15,11 @@ const getAllReservations = async (page = null, limit = null) => {
                         u.NombreUsuario, u.NumeroDocumento AS NroDocumentoCliente, 
                         e.NombreEstadoReserva, m.NomMetodoPago,
                         p.IDPaquete, p.nombre AS NombrePaquete, p.precio AS PrecioPaquete,
+                        h_direct.IDHabitacion AS IDHabitacionDirecta,
                         COALESCE(h_direct.IDHabitacion, h_paq.IDHabitacion) AS IDHabitacion,
                         COALESCE(h_direct.NombreHabitacion, h_paq.NombreHabitacion) AS NombreHabitacion,
                         COALESCE(h_direct.precio, h_paq.precio) AS CostoHabitacion,
-                        c.NombreCabana, c.PrecioNoche AS PrecioCabana,
+                        drc.IDCabana, c.NombreCabana, c.PrecioNoche AS PrecioCabana,
                         r.IdEstadoReserva AS Estado
                  FROM reserva r
                  LEFT JOIN usuarios u ON r.UsuarioIdusuario = u.IDUsuario
@@ -73,6 +74,7 @@ const getReservationById = async (id) => {
                          COALESCE(h_direct.IDHabitacion, h_paq.IDHabitacion) AS IDHabitacion,
                          COALESCE(h_direct.NombreHabitacion, h_paq.NombreHabitacion) AS NombreHabitacion,
                          COALESCE(h_direct.precio, h_paq.precio) AS CostoHabitacion,
+                         h_direct.IDHabitacion AS IDHabitacionDirecta,
                          drc.IDCabana, c.NombreCabana, c.PrecioNoche AS PrecioCabana,
                          r.IdEstadoReserva AS Estado
                  FROM reserva r
@@ -119,10 +121,11 @@ const getReservationsByUser = async (userId) => {
     const sql = `SELECT r.*, u.NombreUsuario, u.NumeroDocumento AS NroDocumentoCliente, 
                         e.NombreEstadoReserva, m.NomMetodoPago,
                          p.IDPaquete, p.nombre AS NombrePaquete, p.precio AS PrecioPaquete,
+                         h_direct.IDHabitacion AS IDHabitacionDirecta,
                          COALESCE(h_direct.IDHabitacion, h_paq.IDHabitacion) AS IDHabitacion,
                          COALESCE(h_direct.NombreHabitacion, h_paq.NombreHabitacion) AS NombreHabitacion,
                          COALESCE(h_direct.precio, h_paq.precio) AS CostoHabitacion,
-                         c.NombreCabana, c.PrecioNoche AS PrecioCabana,
+                         drc.IDCabana, c.NombreCabana, c.PrecioNoche AS PrecioCabana,
                          r.IdEstadoReserva AS Estado
                  FROM reserva r
                  LEFT JOIN usuarios u ON r.UsuarioIdusuario = u.IDUsuario
