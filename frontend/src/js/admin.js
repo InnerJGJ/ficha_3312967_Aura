@@ -3254,7 +3254,7 @@ function renderForm(section, data = null, extra = {}) {
                 body.Descripcion = descrEl.value.trim();
             }
             const checkboxes = document.querySelectorAll('input[name="IDServicioCheckbox"]:checked');
-            body.IDServicio = Array.from(checkboxes).map(c => c.value);
+            body.IDServicio = Array.from(checkboxes).map(c => c.value).join(',') || null;
         }
 
         // Limpiar errores previos
