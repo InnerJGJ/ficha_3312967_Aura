@@ -537,33 +537,27 @@ function renderServiciosCheckboxes(selectedServices = []) {
         const costoS = Number(servicio.Costo || servicio.precio || 0);
         const isChecked = selectedMap.has(servicio.IDServicio);
         const cantidad = selectedMap.get(servicio.IDServicio) || 1;
-        const bloqueado = esReservaEnProceso && serviciosExistentesIds.has(Number(servicio.IDServicio));
 
-        div.style.cssText = `display:flex;flex-direction:column;gap:0.25rem;padding:0.45rem 0.65rem;border-radius:8px;border:1.5px solid rgba(49,130,206,0.15);background:${bloqueado ? '#eef3f8' : '#f8fbff'};${bloqueado ? 'opacity:0.72;' : ''}`;
+        div.style.cssText = 'display:flex;flex-direction:column;gap:0.25rem;padding:0.45rem 0.65rem;border-radius:8px;border:1.5px solid rgba(49,130,206,0.15);background:#f8fbff;';
         div.innerHTML = `
-            <label style="display:flex;align-items:center;gap:0.5rem;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.79rem;color:#1A2B4A;margin:0;">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.79rem;color:#1A2B4A;margin:0;">
                 <input type="checkbox" class="edit-servicio-check" value="${servicio.IDServicio}"
                        data-costo="${costoS}" ${isChecked ? 'checked' : ''}
-                       ${bloqueado ? 'disabled' : ''}
                        style="width:15px;height:15px;accent-color:#2B6CB0;flex-shrink:0;"
                        onchange="calcularTotalEdicion()">
                 <span style="flex:1;font-weight:600;">${servicio.NombreServicio || servicio.nombre || 'Servicio'}</span>
-                ${bloqueado ? '<span style="font-size:0.65rem;background:rgba(43,108,176,0.12);color:#2B6CB0;border-radius:4px;padding:1px 5px;white-space:nowrap;flex-shrink:0;">Ya incluido</span>' : ''}
                 <span style="color:#2B6CB0;font-weight:700;white-space:nowrap;font-size:0.75rem;">$${costoS.toLocaleString('es-CO')}/p</span>
             </label>
             <div style="display:flex;align-items:center;gap:0.35rem;padding-left:1.4rem;">
                 <span style="font-size:0.68rem;color:rgba(26,43,74,0.5);">Cant:</span>
-                <button type="button" onclick="${bloqueado ? '' : `editAjustarCantidad('${servicio.IDServicio}',-1)`}"
-                        ${bloqueado ? 'disabled' : ''}
-                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.85rem;font-weight:700;line-height:1;padding:0;">−</button>
+                <button type="button" onclick="editAjustarCantidad('${servicio.IDServicio}',-1)"
+                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:pointer;font-size:0.85rem;font-weight:700;line-height:1;padding:0;">−</button>
                 <input type="number" class="edit-srv-qty" data-servicio-id="${servicio.IDServicio}"
                        min="1" max="20" value="${cantidad}"
-                       ${bloqueado ? 'disabled' : ''}
                        style="width:36px;text-align:center;border:1px solid rgba(43,108,176,0.25);border-radius:4px;font-size:0.78rem;padding:2px 0;color:#1A2B4A;"
                        oninput="calcularTotalEdicion()">
-                <button type="button" onclick="${bloqueado ? '' : `editAjustarCantidad('${servicio.IDServicio}',1)`}"
-                        ${bloqueado ? 'disabled' : ''}
-                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.85rem;font-weight:700;line-height:1;padding:0;">+</button>
+                <button type="button" onclick="editAjustarCantidad('${servicio.IDServicio}',1)"
+                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:pointer;font-size:0.85rem;font-weight:700;line-height:1;padding:0;">+</button>
                 <span class="edit-srv-total" data-servicio-id="${servicio.IDServicio}"
                       style="font-size:0.72rem;color:#2B6CB0;font-weight:700;margin-left:0.1rem;"></span>
             </div>
