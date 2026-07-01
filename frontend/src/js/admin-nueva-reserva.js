@@ -1060,7 +1060,7 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
     document.getElementById('FechaFinalizacion').value  = tomorrow;
 
     fpStart = flatpickr('#FechaInicio',{
-        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:today,
+        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:today, locale:'es',
         onChange(selectedDates){
             if (selectedDates.length>0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -1070,7 +1070,7 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
         }
     });
     fpEnd = flatpickr('#FechaFinalizacion',{
-        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:tomorrow,
+        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:tomorrow, locale:'es',
         onChange(){ actualizarContadorNoches(); calcularTotal(); validateDateSelection(); }
     });
 

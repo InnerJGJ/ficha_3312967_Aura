@@ -641,6 +641,7 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         disable: disabledDates || [],
         dateFormat: 'Y-m-d',
         defaultDate: startDefault || today,
+        locale: 'es',
         onChange: function (selectedDates) {
             if (selectedDates.length > 0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -658,6 +659,7 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         disable: disabledDates || [],
         dateFormat: 'Y-m-d',
         defaultDate: endDefault || getTomorrowInputValue(),
+        locale: 'es',
         onChange: function () {
             actualizarContadorNoches();
             calcularTotal();
