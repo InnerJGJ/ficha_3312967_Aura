@@ -572,6 +572,22 @@ function renderServiciosCheckboxes(selectedServices = []) {
     calcularTotalEdicion();
 }
 
+function getSeasonalMultiplier(fechaInicio, fechaFin) {
+    if (!fechaInicio || !fechaFin) return 1.0;
+    const cur = new Date(fechaInicio + 'T12:00:00');
+    const fin = new Date(fechaFin + 'T12:00:00');
+    let mult = 1.0;
+    while (cur < fin) {
+        const m = cur.getMonth() + 1;
+        const d = cur.getDate();
+        if ((m === 12 && d >= 15) || (m === 1 && d <= 15)) { if (1.30 > mult) mult = 1.30; }
+        else if ((m === 3 && d >= 20) || (m === 4 && d <= 10)) { if (1.25 > mult) mult = 1.25; }
+        else if (m === 7) { if (1.15 > mult) mult = 1.15; }
+        cur.setDate(cur.getDate() + 1);
+    }
+    return mult;
+}
+
 function calcularTotalEdicion() {
     // Actualizar etiquetas de total por servicio
     document.querySelectorAll('.edit-servicio-check').forEach(cb => {
@@ -613,8 +629,9 @@ function calcularTotalEdicion() {
             return sum + Number(cb.dataset.costo || 0) * qty;
         }, 0);
 
-    // Los precios ya incluyen IVA — el total es la suma directa (igual que el backend y nueva reserva)
-    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
+    // Los precios ya incluyen IVA. Se aplica multiplicador de temporada igual que el backend.
+    const mult = getSeasonalMultiplier(inicio, fin);
+    const total = (alojPrecio + paqAdicPrecio) * noches * mult + totalServicios;
     el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
 
