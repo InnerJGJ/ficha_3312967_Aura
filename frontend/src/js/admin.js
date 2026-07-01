@@ -796,7 +796,6 @@ function erRecalcular() {
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
         ? Math.round((new Date(fin) - new Date(inicio)) / 86400000)
         : 1;
-    const mult = getSeasonalMultiplier(inicio, fin);
     const alojSelect    = document.getElementById('er_alojamiento');
     const alojPrecio    = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
     const paqAdicSelect = document.getElementById('er_paqueteAdicional');
