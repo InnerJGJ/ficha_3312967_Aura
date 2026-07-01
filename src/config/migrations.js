@@ -42,6 +42,27 @@ const runMigrations = async () => {
     console.log('[migration] reserva_historial ready');
 
     // Nuevos usuarios deben verificar — los existentes ya tienen DEFAULT 1 (verificados)
+
+    // Asignar alojamientos a paquetes que aún no tienen uno (idempotente)
+    const paqAloj = [
+      { id: 6, IDCabana: 3,    IDHabitacion: null }, // El Venado → Cabaña La Montaña
+      { id: 7, IDCabana: 1,    IDHabitacion: null }, // Toro Mecánico → Cabaña Familiar Bosque Verde
+      { id: 8, IDCabana: null, IDHabitacion: 6    }, // Paquete Viajero → Doble
+    ];
+    for (const p of paqAloj) {
+      const [rows] = await db.query(
+        'SELECT IDPaquete FROM paquetes WHERE IDPaquete = ? AND IDHabitacion IS NULL AND IDCabana IS NULL',
+        [p.id]
+      );
+      if (rows.length > 0) {
+        await db.query(
+          'UPDATE paquetes SET IDHabitacion = ?, IDCabana = ? WHERE IDPaquete = ?',
+          [p.IDHabitacion, p.IDCabana, p.id]
+        );
+        console.log(`[migration] paquete #${p.id} → alojamiento asignado`);
+      }
+    }
+
     console.log('[migration] all migrations OK');
   } catch (err) {
     console.error('[migration] Error:', err.message);
