@@ -26,6 +26,9 @@ const runMigrations = async () => {
     // Cantidad de huéspedes para los que es la reserva
     await addColumnIfMissing('reserva', 'CantidadHuespedes', 'INT NOT NULL DEFAULT 1');
 
+    // Capacidad máxima de personas por habitación (para recargo de ocupación)
+    await addColumnIfMissing('habitacion', 'CapacidadPersonas', 'INT NOT NULL DEFAULT 1');
+
     // Regla 8: historial de cambios de estado en reservas
     await db.query(`
       CREATE TABLE IF NOT EXISTS reserva_historial (
