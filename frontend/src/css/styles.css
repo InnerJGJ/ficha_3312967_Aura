@@ -2860,3 +2860,79 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   to { opacity: 1; transform: translateY(0); }
 }
 
+
+/* ══════════════════════════════════════════════════════════
+   MODAL DETALLE RESERVA — vista cliente (mismo diseño admin)
+   ══════════════════════════════════════════════════════════ */
+.reservation-details-modal {
+  padding: 0 !important;
+  overflow: hidden;
+  max-width: 680px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.rd-wrap { display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
+
+.rd-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 1rem 1.5rem;
+  background: rgba(49,130,206,0.04);
+  border-bottom: 1px solid rgba(49,130,206,0.1);
+}
+.rd-hero__left  { display: flex; flex-direction: column; gap: 0.35rem; min-width: 100px; }
+.rd-hero__right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; min-width: 100px; }
+.rd-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.72rem; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; border: 1px solid; text-transform: uppercase;
+  letter-spacing: 0.04em; width: fit-content;
+}
+.rd-hero__id    { font-family: monospace; font-size: 0.8rem; color: rgba(26,43,74,0.45); font-weight: 600; }
+.rd-hero__center { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; flex: 1; }
+.rd-hero__label { font-size: 0.65rem; color: rgba(26,43,74,0.45); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; }
+.rd-hero__amount { font-size: 1.55rem; font-weight: 800; line-height: 1; white-space: nowrap; }
+.rd-hero__date  { font-size: 0.85rem; color: rgba(26,43,74,0.7); font-weight: 600; white-space: nowrap; }
+
+.rd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; padding: 1rem 1.25rem 1.25rem; }
+.rd-card {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  background: rgba(49,130,206,0.04); border: 1px solid rgba(49,130,206,0.1);
+  border-radius: 12px; padding: 1rem 1.1rem; transition: border-color 0.2s; min-width: 0;
+}
+.rd-card:hover { border-color: rgba(49,130,206,0.22); }
+.rd-card__icon {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; border: 1px solid;
+  display: flex; align-items: center; justify-content: center;
+}
+.rd-card__content { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+.rd-card__label { font-size: 0.66rem; font-weight: 700; color: rgba(26,43,74,0.72); letter-spacing: 0.4px; text-transform: uppercase; }
+.rd-card__value { font-size: 0.92rem; font-weight: 600; color: #1A2B4A; overflow-wrap: break-word; line-height: 1.4; }
+.rd-card__sub   { font-size: 0.72rem; color: rgba(26,43,74,0.72); font-family: monospace; }
+
+.rd-dates { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.15rem; }
+.rd-dates span { display: inline-flex; align-items: center; gap: 3px; font-size: 0.78rem; color: rgba(26,43,74,0.75); font-weight: 500; }
+.rd-amounts { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.2rem; }
+.rd-amounts span { font-size: 0.72rem; color: rgba(26,43,74,0.8); }
+.rd-amounts b { color: rgba(26,43,74,0.95); font-weight: 600; }
+
+.rd-section { padding: 0.75rem 1.25rem 1.1rem; border-top: 1px solid rgba(49,130,206,0.1); }
+.rd-section__label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; font-weight: 700; color: rgba(26,43,74,0.72);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.55rem;
+}
+.rd-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.rd-tag  {
+  background: rgba(49,130,206,0.08); border: 1px solid rgba(49,130,206,0.2);
+  border-radius: 8px; padding: 3px 10px; font-size: 0.75rem; color: #1A2B4A; font-weight: 500;
+}
+.reservation-details-modal::-webkit-scrollbar { width: 4px; }
+.reservation-details-modal::-webkit-scrollbar-track { background: transparent; }
+.reservation-details-modal::-webkit-scrollbar-thumb { background: rgba(49,130,206,0.25); border-radius: 4px; }
+@media (max-width: 600px) {
+  .rd-grid { grid-template-columns: 1fr; }
+  .rd-hero { flex-direction: column; text-align: center; gap: 0.5rem; }
+  .rd-hero__left, .rd-hero__right { align-items: center; }
+}

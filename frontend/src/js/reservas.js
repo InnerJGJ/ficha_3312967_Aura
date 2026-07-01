@@ -282,143 +282,185 @@ async function loadReservationDetails(id) {
         detailsOverlay.style.display = 'flex';
         const detailsContent = document.getElementById('reservationDetailsContent');
         detailsContent.innerHTML = buildReservationDetails(reservation);
+        if (window.lucide) lucide.createIcons({ parent: detailsContent });
     } catch (error) {
         console.error('Error cargando detalles de la reserva', error);
     }
 }
 
 function buildReservationDetails(r) {
+    const estadoConfig = {
+        pendiente:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  icon: 'clock' },
+        confirmada:   { color: '#10b981', bg: 'rgba(16,185,129,0.15)',  icon: 'check-circle-2' },
+        cancelada:    { color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   icon: 'x-circle' },
+        completada:   { color: '#2B6CB0', bg: 'rgba(49,130,206,0.15)',  icon: 'check-circle' },
+        'en proceso': { color: '#0D9488', bg: 'rgba(13,148,136,0.15)',  icon: 'door-open' },
+    };
+    const key = (r.NombreEstadoReserva || '').toLowerCase();
+    const cfg = estadoConfig[key] || { color: '#6b7280', bg: 'rgba(107,114,128,0.15)', icon: 'help-circle' };
+    const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const montoFmt = v => '$' + Number(v || 0).toLocaleString('es-CO');
+
     const todosServicios = r.servicios || [];
     const serviciosOriginales = todosServicios.filter(s => !s.AgregadoEnProceso);
     const serviciosEnProceso  = todosServicios.filter(s =>  s.AgregadoEnProceso);
     const serviciosPendientes = serviciosEnProceso.filter(s => !s.Pagado);
     const montoAdicionalPend  = serviciosPendientes.reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
+    const montoTotalReal = Number(r.MontoTotal || 0) + montoAdicionalPend;
 
-    const renderServiceItem = (s, pendiente = false) => {
+    const alojamiento = r.NombreHabitacion || r.NombreCabana || r.NombrePaquete || '—';
+    const alojTipo    = r.NombrePaquete ? 'Paquete' : r.NombreCabana ? 'Cabaña' : 'Habitación';
+
+    const renderTag = (s) => {
         const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
         const cant = s.Cantidad || 1;
         const totalS = s.Subtotal || (precioUnit * cant);
-        const porPersonas = cant > 1 ? ` <span style="opacity:0.65;font-size:0.8em;">(x${cant})</span>` : '';
-        const badge = pendiente
-            ? `<span style="font-size:0.7rem;background:rgba(251,191,36,0.2);color:#fbbf24;border-radius:4px;padding:1px 5px;margin-left:4px;">Pendiente</span>`
-            : (s.Pagado ? `<span style="font-size:0.7rem;background:rgba(16,185,129,0.2);color:#10b981;border-radius:4px;padding:1px 5px;margin-left:4px;">Pagado</span>` : '');
-        return `
-        <div class="detail-service-item">
-            <span class="service-name">${s.NombreServicio || s.nombre}${badge}</span>
-            <span class="service-price">$${Number(totalS).toLocaleString('es-CO')}${porPersonas}</span>
-        </div>`;
+        const extra = cant > 1 ? ` <span style="opacity:0.7;font-weight:400;">(x${cant})</span>` : '';
+        return `<span class="rd-tag">${s.NombreServicio || s.nombre}
+            <span style="margin-left:0.35rem;font-weight:700;color:#2B6CB0;">$${Number(totalS).toLocaleString('es-CO')}${extra}</span>
+        </span>`;
+    };
+    const renderTagEnProceso = (s) => {
+        const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
+        const cant = s.Cantidad || 1;
+        const totalS = s.Subtotal || (precioUnit * cant);
+        const badge = s.Pagado
+            ? `<span style="margin-left:0.4rem;font-size:0.68rem;background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 5px;font-weight:600;">Pagado</span>`
+            : `<span style="margin-left:0.4rem;font-size:0.68rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:600;">Pendiente</span>`;
+        return `<span class="rd-tag">${s.NombreServicio || s.nombre}${badge}
+            <span style="margin-left:0.35rem;font-weight:700;color:#b45309;">$${Number(totalS).toLocaleString('es-CO')}</span>
+        </span>`;
     };
 
     const serviciosOrigHtml = serviciosOriginales.length > 0
-        ? `<div class="details-services-grid">${serviciosOriginales.map(s => renderServiceItem(s)).join('')}</div>`
-        : '<p style="color: rgba(255,255,255,0.4); margin: 0;">Sin servicios adicionales.</p>';
-
+        ? serviciosOriginales.map(renderTag).join('')
+        : '<span style="color:rgba(26,43,74,0.45);font-size:0.8rem;">Sin servicios adicionales</span>';
     const serviciosEnProcHtml = serviciosEnProceso.length > 0
-        ? `<div style="margin-top:0.75rem;">
-            <p style="font-size:0.78rem;color:rgba(251,191,36,0.9);font-weight:600;margin:0 0 0.4rem;">Agregados durante la estadía:</p>
-            <div class="details-services-grid">${serviciosEnProceso.map(s => renderServiceItem(s, !s.Pagado)).join('')}</div>
-           </div>`
-        : '';
-
-    const avisoHtml = montoAdicionalPend > 0
-        ? `<div style="margin:1rem 0;padding:0.8rem 1rem;background:rgba(251,191,36,0.1);border:1.5px solid rgba(251,191,36,0.4);border-radius:10px;display:flex;align-items:flex-start;gap:0.5rem;">
-            <span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>
-            <div style="font-size:0.82rem;color:rgba(251,191,36,0.95);line-height:1.5;">
-                <strong>Tienes $${montoAdicionalPend.toLocaleString('es-CO')} en servicios adicionales pendientes de pago.</strong><br>
-                Debes cancelarlos antes o durante el check-out para poder completar tu reserva.
-            </div>
-           </div>`
-        : '';
+        ? serviciosEnProceso.map(renderTagEnProceso).join('')
+        : null;
 
     return `
-        <div class="reservation-details-premium">
-            <div class="modal-header">
-                <div>
-                    <h2 style="margin:0;">Detalles de la Reserva <span style="color:rgba(255,255,255,0.3); font-size: 1rem; font-weight: 400;">#${r.IdReserva}</span></h2>
-                    <div class="status-badge status-${r.NombreEstadoReserva.toLowerCase()}">${r.NombreEstadoReserva}</div>
-                </div>
-                <button class="btn-close" onclick="ocultarDetalles()">×</button>
-            </div>
+    <div class="rd-wrap">
 
-            <div class="nr-layout" style="margin-top: 1.5rem;">
-                <!-- Lado Izquierdo: Información -->
-                <div class="nr-form">
-                    <div class="nr-grid-2">
-                        <div class="detail-info-group">
-                            <label>Información del Cliente</label>
-                            <p><strong>${r.NombreUsuario}</strong></p>
-                            <p>Documento: ${r.NroDocumentoCliente || '-'}</p>
-                        </div>
-                        <div class="detail-info-group">
-                            <label>Estadía</label>
-                            <p>Inicio: ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
-                            <p>Fin: ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
-                        </div>
-                    </div>
-
-                    <div class="nr-card" style="padding: 1.25rem;">
-                        <div class="nr-card__titulo">Habitación y Paquete</div>
-                        <div class="nr-grid-2">
-                            <div>
-                                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 0.2rem;">Habitación</p>
-                                <p style="font-weight: 600;">${r.NombreHabitacion || '-'}</p>
-                            </div>
-                            <div>
-                                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 0.2rem;">Paquete</p>
-                                <p style="font-weight: 600;">${r.NombrePaquete || '-'}</p>                            </div>
-                        </div>
-                    </div>
-
-                    <div class="nr-card" style="padding: 1.25rem;">
-                        <div class="nr-card__titulo">Servicios incluidos en la reserva</div>
-                        ${serviciosOrigHtml}
-                        ${serviciosEnProcHtml}
-                    </div>
-                    ${avisoHtml}
-                </div>
-
-                <!-- Lado Derecho: Resumen Financiero -->
-                <div class="nr-resumen">
-                    <div class="nr-resumen__titulo">Resumen de Pago</div>
-                    <div class="nr-resumen__fila">
-                        <span>Método de Pago</span>
-                        <span>${r.NomMetodoPago}</span>
-                    </div>
-                    <div class="nr-resumen__fila">
-                        <span>Subtotal</span>
-                        <span>${formatCurrency(r.SubTotal || 0)}</span>
-                    </div>
-                    <div class="nr-resumen__fila">
-                        <span>Descuento</span>
-                        <span>${formatCurrency(r.Descuento || 0)}</span>
-                    </div>
-                    <div class="nr-resumen__fila">
-                        <span>IVA (19%)</span>
-                        <span>${formatCurrency(r.IVA || 0)}</span>
-                    </div>
-                    <div class="nr-resumen__total">
-                        <span>Total pagado</span>
-                        <span>${formatCurrency(r.MontoTotal || 0)}</span>
-                    </div>
-                    ${montoAdicionalPend > 0 ? `
-                    <div style="margin-top:0.5rem;padding:0.6rem 0.75rem;background:rgba(251,191,36,0.12);border-radius:8px;border:1px solid rgba(251,191,36,0.35);">
-                        <div style="display:flex;justify-content:space-between;font-size:0.83rem;color:rgba(251,191,36,0.9);">
-                            <span>Servicios adicionales pendientes</span>
-                            <strong>${formatCurrency(montoAdicionalPend)}</strong>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700;color:#fff;margin-top:0.3rem;padding-top:0.3rem;border-top:1px solid rgba(251,191,36,0.3);">
-                            <span>Total acumulado</span>
-                            <span>${formatCurrency(Number(r.MontoTotal || 0) + montoAdicionalPend)}</span>
-                        </div>
-                    </div>` : ''}
-                    
-                    <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                        ${[3, 4].includes(r.IdEstadoReserva) ? '' : `<button class="btn btn-primario" onclick="abrirEdicion(${r.IdReserva})">Editar Reserva</button>`}
-                        <button class="btn btn-outline" onclick="ocultarDetalles()">Cerrar</button>                    </div>
-                </div>
-            </div>
+      <!-- Cabecera -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(49,130,206,0.1);">
+        <div>
+          <h2 style="margin:0;font-size:1.1rem;font-weight:700;color:#1A2B4A;">
+            Detalles de la Reserva <span style="color:rgba(26,43,74,0.4);font-size:0.9rem;font-weight:400;">#${r.IdReserva}</span>
+          </h2>
+          <span class="rd-badge" style="margin-top:0.4rem;color:${cfg.color};background:${cfg.bg};border-color:${cfg.color}44;">
+            <i data-lucide="${cfg.icon}" style="width:11px;height:11px;"></i>
+            ${r.NombreEstadoReserva || '—'}
+          </span>
         </div>
-    `;
+        <button onclick="ocultarDetalles()" style="background:none;border:none;font-size:1.5rem;color:rgba(26,43,74,0.35);cursor:pointer;padding:0.2rem 0.5rem;border-radius:8px;line-height:1;transition:background .15s;" onmouseover="this.style.background='rgba(26,43,74,0.07)'" onmouseout="this.style.background='none'">×</button>
+      </div>
+
+      <!-- Franja de resumen -->
+      <div class="rd-hero" style="border-top:3px solid ${cfg.color};">
+        <div class="rd-hero__left">
+          <span class="rd-hero__id"># ${r.IdReserva}</span>
+        </div>
+        <div class="rd-hero__center">
+          <span class="rd-hero__label">${montoAdicionalPend > 0 ? 'Total acumulado' : 'Total a pagar'}</span>
+          <span class="rd-hero__amount" style="color:#1A2B4A;">
+            <span style="color:#10b981;">$</span>${montoTotalReal.toLocaleString('es-CO')}
+          </span>
+          ${montoAdicionalPend > 0 ? `<span style="font-size:0.7rem;color:#6b7280;margin-top:2px;">Original: $${Number(r.MontoTotal||0).toLocaleString('es-CO')} + Adicional: $${montoAdicionalPend.toLocaleString('es-CO')}</span>` : ''}
+        </div>
+        <div class="rd-hero__right">
+          <span class="rd-hero__label">Reservado el</span>
+          <span class="rd-hero__date">${fmt(r.FechaReserva || null)}</span>
+        </div>
+      </div>
+
+      <!-- Grid 2×2 de datos -->
+      <div class="rd-grid">
+        <div class="rd-card">
+          <div class="rd-card__icon" style="background:rgba(123,47,247,0.15);border-color:rgba(123,47,247,0.3);color:#9b59f5;">
+            <i data-lucide="user" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="rd-card__content">
+            <span class="rd-card__label">Cliente</span>
+            <span class="rd-card__value">${r.NombreUsuario || '—'}</span>
+            <span class="rd-card__sub">${r.NroDocumentoCliente ? 'Doc: ' + r.NroDocumentoCliente : ''}</span>
+          </div>
+        </div>
+        <div class="rd-card">
+          <div class="rd-card__icon" style="background:rgba(49,130,206,0.12);border-color:rgba(49,130,206,0.3);color:#2B6CB0;">
+            <i data-lucide="home" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="rd-card__content">
+            <span class="rd-card__label">Alojamiento</span>
+            <span class="rd-card__value">${alojamiento}</span>
+            <span class="rd-card__sub">${alojTipo}</span>
+          </div>
+        </div>
+        <div class="rd-card">
+          <div class="rd-card__icon" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#10b981;">
+            <i data-lucide="calendar-range" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="rd-card__content">
+            <span class="rd-card__label">Estadía</span>
+            <div class="rd-dates">
+              <span><i data-lucide="log-in" style="width:11px;color:#10b981;"></i> ${fmt(r.FechaInicio)}</span>
+              <span style="color:rgba(26,43,74,0.35);">→</span>
+              <span><i data-lucide="log-out" style="width:11px;color:#ef4444;"></i> ${fmt(r.FechaFinalizacion)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="rd-card">
+          <div class="rd-card__icon" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:#f59e0b;">
+            <i data-lucide="credit-card" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="rd-card__content">
+            <span class="rd-card__label">Método de pago</span>
+            <span class="rd-card__value">${r.NomMetodoPago || '—'}</span>
+            <div class="rd-amounts">
+              <span>Subtotal: <b>${montoFmt(r.SubTotal)}</b></span>
+              ${r.Descuento ? `<span>Dto: <b>${r.Descuento}%</b></span>` : ''}
+              ${r.IVA ? `<span>IVA: <b>${r.IVA}%</b></span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aviso pago adicional -->
+      ${montoAdicionalPend > 0 ? `
+      <div style="margin:0 1rem 0;padding:0.75rem 1rem;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.45);border-radius:10px;display:flex;align-items:flex-start;gap:0.6rem;">
+        <i data-lucide="alert-triangle" style="width:18px;flex-shrink:0;color:#b45309;margin-top:1px;"></i>
+        <div style="font-size:0.8rem;color:#92400e;line-height:1.5;">
+          <strong>Tienes $${montoAdicionalPend.toLocaleString('es-CO')} en servicios adicionales pendientes de pago.</strong><br>
+          Debes cancelarlos antes o durante el check-out para poder completar tu reserva.
+        </div>
+      </div>` : ''}
+
+      <!-- Servicios incluidos -->
+      <div class="rd-section">
+        <span class="rd-section__label">
+          <i data-lucide="sparkles" style="width:13px;color:#f59e0b;"></i>
+          Servicios incluidos en la reserva
+        </span>
+        <div class="rd-tags">${serviciosOrigHtml}</div>
+      </div>
+
+      <!-- Servicios agregados durante la estadía -->
+      ${serviciosEnProcHtml ? `
+      <div class="rd-section">
+        <span class="rd-section__label">
+          <i data-lucide="plus-circle" style="width:13px;color:#b45309;"></i>
+          Servicios agregados durante la estadía
+        </span>
+        <div class="rd-tags">${serviciosEnProcHtml}</div>
+      </div>` : ''}
+
+      <!-- Acciones -->
+      <div style="padding:1rem 1.25rem;border-top:1px solid rgba(49,130,206,0.1);display:flex;gap:0.75rem;justify-content:flex-end;">
+        ${[3, 4].includes(r.IdEstadoReserva) ? '' : `<button class="btn btn-primario" onclick="abrirEdicion(${r.IdReserva})">Editar Reserva</button>`}
+        <button class="btn btn-outline" onclick="ocultarDetalles()">Cerrar</button>
+      </div>
+
+    </div>`;
 }
 
 function ocultarDetalles() {
