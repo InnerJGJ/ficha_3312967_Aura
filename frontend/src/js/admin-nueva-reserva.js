@@ -600,14 +600,7 @@ function updateAvailabilityMessage() {
     const el = document.getElementById('dateAvailabilityMessage');
     if (!el) return;
     if (!roomId) { el.innerHTML='<em>Selecciona una habitación, cabaña o paquete para ver las fechas disponibles.</em>'; el.style.color='rgba(26,43,74,0.65)'; return; }
-    const blocked = getRoomBlockedRanges(roomId);
-    if (!blocked.length) { el.innerHTML='<strong style="color:#16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.'; el.style.color='rgba(26,43,74,0.8)'; return; }
-    const txt=blocked.map(r=>{
-        const s=new Date(r.start).toLocaleDateString('es-CO',{month:'short',day:'numeric'});
-        const e=new Date(r.end).toLocaleDateString('es-CO',{month:'short',day:'numeric'});
-        return `${s} - ${e}`;
-    }).join('; ');
-    el.innerHTML=`<strong style="color:#dc2626;">⚠ Fechas ocupadas:</strong> ${txt}`; el.style.color='rgba(26,43,74,0.8)';
+    el.innerHTML='<strong style="color:#16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.'; el.style.color='rgba(26,43,74,0.8)';
 }
 function validateDateSelection() {
     const roomId = getSelectedRoomId();

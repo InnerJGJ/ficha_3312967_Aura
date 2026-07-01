@@ -747,21 +747,7 @@ function updateAvailabilityMessage() {
         return;
     }
 
-    if (blockedRanges.length === 0) {
-        messageEl.innerHTML = '<strong style="color: #16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.';
-        messageEl.style.color = 'rgba(26, 43, 74, 0.8)';
-        return;
-    }
-
-    const rangesText = blockedRanges.map(r => {
-        const startDate = new Date(r.start);
-        const endDate = new Date(r.end);
-        const startFormatted = startDate.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-        const endFormatted = endDate.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-        return `${startFormatted} - ${endFormatted}`;
-    }).join('; ');
-
-    messageEl.innerHTML = `<strong style="color: #dc2626;">⚠ Fechas ocupadas:</strong> ${rangesText}`;
+    messageEl.innerHTML = '<strong style="color: #16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.';
     messageEl.style.color = 'rgba(26, 43, 74, 0.8)';
 }
 
