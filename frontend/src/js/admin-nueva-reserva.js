@@ -314,7 +314,7 @@ async function cargarClientes() {
         const r = await fetch('/api/usuarios');
         if (!r.ok) throw new Error('Error al cargar clientes');
         const todos = await r.json();
-        clientesCache = todos.filter(u => u.IDRol !== 2 && u.Estado === 1);
+        clientesCache = todos.filter(u => u.Estado === 1);
     } catch(e) {
         console.error('cargarClientes:', e);
     }
