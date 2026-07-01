@@ -1225,6 +1225,9 @@ async function cargarHabitaciones() {
                         <div>
                             <h3>${h.NombreHabitacion || 'Habitación'}</h3>
                             <p>${h.Descripcion || 'Descripción breve de la habitación.'}</p>
+                            <div style="font-size: 0.8rem; color: rgba(26,43,74,0.5); margin-top: 0.5rem; display: flex; flex-direction: column; gap: 4px;">
+                                <span>👥 Capacidad: ${h.CapacidadPersonas || '—'} pers.</span>
+                            </div>
                         </div>
                         <div class="room-info" style="margin-top: auto; display: flex; align-items: center; justify-content: space-between;">
                             <span class="room-price">${precio}</span>
