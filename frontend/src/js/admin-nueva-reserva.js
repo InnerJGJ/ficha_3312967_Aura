@@ -541,15 +541,44 @@ function getRoomBlockedRanges(roomId) {
 }
 function isRangeOverlapping(start,end,range) { return !(end<range.start||start>range.end); }
 
+// Destruye y recrea flatpickr conservando las fechas ya seleccionadas y aplicando
+// las nuevas fechas bloqueadas. Usar destroy+reinit en vez de set() porque set()
+// provoca un redraw que vacía visualmente el input aunque selectedDates siga intacto.
+function reinitFlatpickrs(disabled, savedStart, savedEnd) {
+    const today = getTodayInputValue();
+    if (fpStart) { fpStart.destroy(); fpStart = null; }
+    if (fpEnd)   { fpEnd.destroy();   fpEnd   = null; }
+
+    fpStart = flatpickr('#FechaInicio', {
+        minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
+        defaultDate: savedStart || today, locale: 'es',
+        onChange(selectedDates) {
+            if (selectedDates.length > 0) {
+                const nextDay = new Date(selectedDates[0].getTime() + 86400000);
+                if (fpEnd) fpEnd.set('minDate', formatDateForInput(nextDay.toISOString()));
+                actualizarContadorNoches(); calcularTotal(); validateDateSelection();
+            }
+        }
+    });
+    fpEnd = flatpickr('#FechaFinalizacion', {
+        minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
+        defaultDate: savedEnd || getTomorrowInputValue(), locale: 'es',
+        onChange() { actualizarContadorNoches(); calcularTotal(); validateDateSelection(); }
+    });
+}
+
 async function updateDatePickerRestrictions() {
+    // Guardar fechas actuales ANTES del await — el redraw de flatpickr las borraría
+    const savedStart = document.getElementById('FechaInicio')?.value || getTodayInputValue();
+    const savedEnd   = document.getElementById('FechaFinalizacion')?.value || getTomorrowInputValue();
+
     const roomId = getSelectedRoomId();
     const type   = getSelectedAccommodationType();
-    const confirmed = roomId ? await cargarReservasConfirmadasPorAlojamiento(roomId,type) : [];
+    const confirmed = roomId ? await cargarReservasConfirmadasPorAlojamiento(roomId, type) : [];
     allReservations = confirmed;
     const disabled = getDisabledDatesForRoom(roomId);
-    const today = getTodayInputValue();
-    if (fpStart){ fpStart.set('disable',disabled); fpStart.set('minDate',today); }
-    if (fpEnd)  { fpEnd.set('disable',disabled);   fpEnd.set('minDate',today); }
+
+    reinitFlatpickrs(disabled, savedStart, savedEnd);
 }
 function getDisabledDatesForRoom(roomId) {
     if (!roomId) return [];
@@ -1059,20 +1088,7 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
     document.getElementById('FechaInicio').value        = today;
     document.getElementById('FechaFinalizacion').value  = tomorrow;
 
-    fpStart = flatpickr('#FechaInicio',{
-        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:today, locale:'es',
-        onChange(selectedDates){
-            if (selectedDates.length>0) {
-                const nextDay = new Date(selectedDates[0].getTime() + 86400000);
-                if(fpEnd)fpEnd.set('minDate',formatDateForInput(nextDay.toISOString()));
-                actualizarContadorNoches(); calcularTotal(); validateDateSelection();
-            }
-        }
-    });
-    fpEnd = flatpickr('#FechaFinalizacion',{
-        minDate:today, disable:[], dateFormat:'Y-m-d', defaultDate:tomorrow, locale:'es',
-        onChange(){ actualizarContadorNoches(); calcularTotal(); validateDateSelection(); }
-    });
+    reinitFlatpickrs([], today, tomorrow);
 
     actualizarContadorNoches();
     calcularTotal();
