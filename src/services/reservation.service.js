@@ -893,56 +893,90 @@ const getConfirmedReservations = async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getConfirmedReservationsByAccommodation = async (accommodationId, type = 'habitacion') => {
   try {
-    let sql = '';
-    
     if (type === 'paquete') {
-      // Para paquetes, obtener la habitación asociada
-      sql = `SELECT 
-                r.IdReserva,
-                r.FechaInicio,
-                r.FechaFinalizacion,
-                p.IDHabitacion
-             FROM reserva r
-             JOIN detallereservapaquetes drp ON r.IdReserva = drp.IDReserva
-             JOIN paquetes p ON drp.IDPaquete = p.IDPaquete
-             WHERE p.IDPaquete = ? 
-             AND r.IdEstadoReserva IN (1, 2, 5)
-             AND r.FechaInicio IS NOT NULL
-             AND r.FechaFinalizacion IS NOT NULL
-             ORDER BY r.FechaInicio ASC`;
+      // 1. Reservas directas de este paquete
+      const [directResults] = await db.query(
+        `SELECT r.IdReserva, r.FechaInicio, r.FechaFinalizacion
+         FROM reserva r
+         JOIN detallereservapaquetes drp ON r.IdReserva = drp.IDReserva
+         WHERE drp.IDPaquete = ?
+           AND r.IdEstadoReserva IN (1, 2, 5)
+           AND r.FechaInicio IS NOT NULL AND r.FechaFinalizacion IS NOT NULL`,
+        [accommodationId]
+      );
+
+      // 2. Si el paquete incluye un alojamiento, también bloquear fechas de ese alojamiento
+      //    (reservas directas del alojamiento + reservas de otros paquetes que lo incluyan)
+      const [paqRows] = await db.query(
+        'SELECT IDHabitacion, IDCabana FROM paquetes WHERE IDPaquete = ?',
+        [accommodationId]
+      );
+      let alojResults = [];
+      if (paqRows.length > 0) {
+        const { IDHabitacion, IDCabana } = paqRows[0];
+        if (IDHabitacion) {
+          alojResults = await getConfirmedReservationsByAccommodation(IDHabitacion, 'habitacion');
+        } else if (IDCabana) {
+          alojResults = await getConfirmedReservationsByAccommodation(IDCabana, 'cabana');
+        }
+      }
+
+      // Fusionar y deduplicar por IdReserva
+      const seen = new Set();
+      return [...directResults, ...alojResults]
+        .filter(r => { const k = r.IdReserva; if (seen.has(k)) return false; seen.add(k); return true; })
+        .sort((a, b) => new Date(a.FechaInicio) - new Date(b.FechaInicio));
+
     } else if (type === 'cabana') {
-      sql = `SELECT 
-                r.IdReserva,
-                r.FechaInicio,
-                r.FechaFinalizacion,
-                c.IDCabana
-             FROM reserva r
-             JOIN detallereservacabana drc ON r.IdReserva = drc.IDReserva
-             JOIN cabanas c ON drc.IDCabana = c.IDCabana
-             WHERE c.IDCabana = ? 
-             AND r.IdEstadoReserva IN (1, 2, 5)
-             AND r.FechaInicio IS NOT NULL
-             AND r.FechaFinalizacion IS NOT NULL
-             ORDER BY r.FechaInicio ASC`;
+      // Reservas directas de la cabaña + reservas de paquetes que incluyan esta cabaña
+      const [results] = await db.query(
+        `SELECT r.IdReserva, r.FechaInicio, r.FechaFinalizacion, drc.IDCabana
+         FROM reserva r
+         JOIN detallereservacabana drc ON r.IdReserva = drc.IDReserva
+         WHERE drc.IDCabana = ?
+           AND r.IdEstadoReserva IN (1, 2, 5)
+           AND r.FechaInicio IS NOT NULL AND r.FechaFinalizacion IS NOT NULL
+
+         UNION
+
+         SELECT r.IdReserva, r.FechaInicio, r.FechaFinalizacion, p.IDCabana
+         FROM reserva r
+         JOIN detallereservapaquetes drp ON r.IdReserva = drp.IDReserva
+         JOIN paquetes p ON drp.IDPaquete = p.IDPaquete
+         WHERE p.IDCabana = ?
+           AND r.IdEstadoReserva IN (1, 2, 5)
+           AND r.FechaInicio IS NOT NULL AND r.FechaFinalizacion IS NOT NULL
+
+         ORDER BY FechaInicio ASC`,
+        [accommodationId, accommodationId]
+      );
+      return results;
+
     } else {
-      // Por defecto, habitación
-      sql = `SELECT 
-                r.IdReserva,
-                r.FechaInicio,
-                r.FechaFinalizacion,
-                h.IDHabitacion
-             FROM reserva r
-             JOIN detallereservahabitacion drh ON r.IdReserva = drh.IDReserva
-             JOIN habitacion h ON drh.IDHabitacion = h.IDHabitacion
-             WHERE h.IDHabitacion = ? 
-             AND r.IdEstadoReserva IN (1, 2, 5)
-             AND r.FechaInicio IS NOT NULL
-             AND r.FechaFinalizacion IS NOT NULL
-             ORDER BY r.FechaInicio ASC`;
+      // habitacion (default): reservas directas + reservas de paquetes que incluyan esta habitación
+      const [results] = await db.query(
+        `SELECT r.IdReserva, r.FechaInicio, r.FechaFinalizacion, drh.IDHabitacion
+         FROM reserva r
+         JOIN detallereservahabitacion drh ON r.IdReserva = drh.IDReserva
+         WHERE drh.IDHabitacion = ?
+           AND r.IdEstadoReserva IN (1, 2, 5)
+           AND r.FechaInicio IS NOT NULL AND r.FechaFinalizacion IS NOT NULL
+
+         UNION
+
+         SELECT r.IdReserva, r.FechaInicio, r.FechaFinalizacion, p.IDHabitacion
+         FROM reserva r
+         JOIN detallereservapaquetes drp ON r.IdReserva = drp.IDReserva
+         JOIN paquetes p ON drp.IDPaquete = p.IDPaquete
+         WHERE p.IDHabitacion = ?
+           AND r.IdEstadoReserva IN (1, 2, 5)
+           AND r.FechaInicio IS NOT NULL AND r.FechaFinalizacion IS NOT NULL
+
+         ORDER BY FechaInicio ASC`,
+        [accommodationId, accommodationId]
+      );
+      return results;
     }
-    
-    const [results] = await db.query(sql, [accommodationId]);
-    return results;
   } catch (error) {
     throw error;
   }
