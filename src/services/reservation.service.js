@@ -3,7 +3,7 @@
 const db = require('../config/db');
 const usuariosService = require('./usuarios.service');
 const emailService = require('./email.service');
-const { HORAS_EXPIRACION_RESERVA } = require('../config/business-rules');
+const { HORAS_EXPIRACION_RESERVA, PORCENTAJE_PERSONA_EXTRA, OCUPACION_ESTANDAR_PERSONAS } = require('../config/business-rules');
 
 // Obtener todas las reservas (con paginación opcional)
 const getAllReservations = async (page = null, limit = null) => {
@@ -139,36 +139,30 @@ const getReservationsByUser = async (userId) => {
 };
 
 const getPackagePrice = async (IDPaquete) => {
-  try {
-    if (!IDPaquete) return 0;
-    const [results] = await db.query('SELECT Precio FROM paquetes WHERE IDPaquete = ?', [IDPaquete]);
-    if (!results.length) throw new Error('Paquete no encontrado');
-    return Number(results[0].Precio) || 0;
-  } catch (error) {
-    throw error;
-  }
+  if (!IDPaquete) return { precio: 0, capacidad: null };
+  const [results] = await db.query('SELECT Precio, NumeroPersonas FROM paquetes WHERE IDPaquete = ?', [IDPaquete]);
+  if (!results.length) throw new Error('Paquete no encontrado');
+  return { precio: Number(results[0].Precio) || 0, capacidad: results[0].NumeroPersonas || null };
 };
 
 const getHabitacionPrice = async (IDHabitacion) => {
-  try {
-    if (!IDHabitacion) return 0;
-    const [results] = await db.query('SELECT precio FROM habitacion WHERE IDHabitacion = ?', [IDHabitacion]);
-    if (!results.length) throw new Error('Habitación no encontrada');
-    return Number(results[0].precio) || 0;
-  } catch (error) {
-    throw error;
-  }
+  if (!IDHabitacion) return { precio: 0, capacidad: null };
+  const [results] = await db.query('SELECT precio, CapacidadPersonas FROM habitacion WHERE IDHabitacion = ?', [IDHabitacion]);
+  if (!results.length) throw new Error('Habitación no encontrada');
+  return { precio: Number(results[0].precio) || 0, capacidad: results[0].CapacidadPersonas || null };
 };
 
 const getCabanaPrice = async (IDCabana) => {
-  try {
-    if (!IDCabana) return 0;
-    const [results] = await db.query('SELECT PrecioNoche FROM cabanas WHERE IDCabana = ?', [IDCabana]);
-    if (!results.length) throw new Error('Cabaña no encontrada');
-    return Number(results[0].PrecioNoche) || 0;
-  } catch (error) {
-    throw error;
-  }
+  if (!IDCabana) return { precio: 0, capacidad: null };
+  const [results] = await db.query('SELECT PrecioNoche, CapacidadPersonas FROM cabanas WHERE IDCabana = ?', [IDCabana]);
+  if (!results.length) throw new Error('Cabaña no encontrada');
+  return { precio: Number(results[0].PrecioNoche) || 0, capacidad: results[0].CapacidadPersonas || null };
+};
+
+// Aplica recargo por personas adicionales sobre la ocupación estándar global.
+const calcularPrecioConOcupacion = (precioBase, cantidadHuespedes) => {
+  const extra = Math.max(0, cantidadHuespedes - OCUPACION_ESTANDAR_PERSONAS);
+  return precioBase + extra * (precioBase * PORCENTAJE_PERSONA_EXTRA);
 };
 
 const getServicesPrices = async (serviceRows) => {
@@ -282,7 +276,9 @@ const getSeasonalInfo = (fechaInicio, fechaFin) => {
   return { multiplicador: mult, temporada };
 };
 
-const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, FechaInicio = null, FechaFinalizacion = null) => {
+const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, FechaInicio = null, FechaFinalizacion = null, cantidadHuespedes = 1) => {
+  const huespedes = Math.max(1, Number(cantidadHuespedes) || 1);
+
   // Calcular número de noches
   let noches = 1;
   if (FechaInicio && FechaFinalizacion) {
@@ -294,15 +290,28 @@ const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, 
 
   const { multiplicador, temporada } = getSeasonalInfo(FechaInicio, FechaFinalizacion);
 
-  const paquetePrecioNoche = await getPackagePrice(IDPaquete);
-  const habitacionPrecioNoche = await getHabitacionPrice(IDHabitacion);
-  const cabanaPrecioNoche = await getCabanaPrice(IDCabana);
+  const paq  = await getPackagePrice(IDPaquete);
+  const hab  = await getHabitacionPrice(IDHabitacion);
+  const cab  = await getCabanaPrice(IDCabana);
   const servicioPrecios = await getServicesPrices(servicioRows);
 
+  // Validar capacidad máxima del alojamiento seleccionado
+  const capacidadMaxima = hab.capacidad || cab.capacidad || paq.capacidad || null;
+  if (capacidadMaxima !== null && huespedes > capacidadMaxima) {
+    const err = new Error(`La capacidad máxima de este alojamiento es de ${capacidadMaxima} persona(s). No puede recibir ${huespedes} huéspedes.`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Precio base por noche con recargo de ocupación (formula: precio_base + personas_extra × precio_base × PORCENTAJE)
+  const paqueteBaseNoche    = calcularPrecioConOcupacion(paq.precio, paq.precio > 0 ? huespedes : 0);
+  const habitacionBaseNoche = calcularPrecioConOcupacion(hab.precio, hab.precio > 0 ? huespedes : 0);
+  const cabanaBaseNoche     = calcularPrecioConOcupacion(cab.precio, cab.precio > 0 ? huespedes : 0);
+
   // Multiplicar por noches y por temporada (solo alojamiento, no servicios adicionales)
-  const paquetePrecio    = parseFloat((paquetePrecioNoche    * noches * multiplicador).toFixed(2));
-  const habitacionPrecio = parseFloat((habitacionPrecioNoche * noches * multiplicador).toFixed(2));
-  const cabanaPrecio     = parseFloat((cabanaPrecioNoche     * noches * multiplicador).toFixed(2));
+  const paquetePrecio    = parseFloat((paqueteBaseNoche    * noches * multiplicador).toFixed(2));
+  const habitacionPrecio = parseFloat((habitacionBaseNoche * noches * multiplicador).toFixed(2));
+  const cabanaPrecio     = parseFloat((cabanaBaseNoche     * noches * multiplicador).toFixed(2));
 
   const servicios = Array.isArray(servicioRows)
     ? servicioRows.map(row => {
@@ -412,7 +421,7 @@ const createReservation = async (data) => {
     }
 
     const servicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
-    const totals = await calculateTotals(data.IDPaquete, data.IDHabitacion, data.IDCabana, servicioIds, data.FechaInicio, data.FechaFinalizacion);
+    const totals = await calculateTotals(data.IDPaquete, data.IDHabitacion, data.IDCabana, servicioIds, data.FechaInicio, data.FechaFinalizacion, data.CantidadHuespedes);
 
     // ── VALIDACIÓN DE TRASLAPE DE FECHAS (backend) ──────────────────────────
     // Se verifica antes de insertar para evitar doble reserva.
@@ -557,7 +566,7 @@ const updateReservation = async (id, data) => {
       }
     }
     const servicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
-    const totals = await calculateTotals(data.IDPaquete, data.IDHabitacion, data.IDCabana, servicioIds, data.FechaInicio, data.FechaFinalizacion);
+    const totals = await calculateTotals(data.IDPaquete, data.IDHabitacion, data.IDCabana, servicioIds, data.FechaInicio, data.FechaFinalizacion, data.CantidadHuespedes);
 
     const reservaData = {};
     if (data.FechaInicio) reservaData.FechaInicio = data.FechaInicio;

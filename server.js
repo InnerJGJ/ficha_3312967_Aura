@@ -48,6 +48,13 @@ app.get('/reset-password', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'src', 'pages', 'reset-password.html'));
 });
 
+// ===== CONFIG PÚBLICA (precios, sin datos sensibles) =====
+const { PORCENTAJE_PERSONA_EXTRA, OCUPACION_ESTANDAR_PERSONAS } = require('./src/config/business-rules');
+app.get('/api/config/precios', (req, res) => res.json({
+  porcentajePersonaExtra: PORCENTAJE_PERSONA_EXTRA,
+  ocupacionEstandar: OCUPACION_ESTANDAR_PERSONAS
+}));
+
 // ===== HEALTH CHECK =====
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 

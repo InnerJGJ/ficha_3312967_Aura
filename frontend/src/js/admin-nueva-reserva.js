@@ -62,6 +62,9 @@ let fpStart             = null;
 let fpEnd               = null;
 let selectedClienteUserId = null;
 
+// Config de precios — se carga desde /api/config/precios al iniciar
+let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 2 };
+
 /* ──────────────────────────────────────────────────
    BÚSQUEDA DE CLIENTE POR DOCUMENTO
 ────────────────────────────────────────────────── */
@@ -242,31 +245,27 @@ function actualizarDesglose() {
     const items = [];
     const noches = actualizarContadorNoches();
 
+    const huespedes = parseInt(document.getElementById('CantidadHuespedes')?.value) || 1;
     // Solo un tipo de alojamiento — mismo orden de prioridad que calcularTotal()
     const hSel = document.getElementById('IDHabitacion');
     const cSel = document.getElementById('IDCabana');
     const pSel = document.getElementById('IDPaquete');
+    const _pushAloj = (nombre, precioBase, capacidad) => {
+        const { precioConRecargo, extra, recargo } = getPrecioConOcupacion(precioBase, huespedes, capacidad);
+        const sub = noches > 0 ? precioConRecargo * noches : 0;
+        let detail = noches > 0 ? `$${formatCurrency(precioConRecargo)}/noche × ${noches} noches` : '';
+        if (extra > 0) detail += ` · +${extra} persona(s) extra (+${formatCurrency(recargo)}/noche)`;
+        items.push({name: nombre, val: sub, detail, type: 'accommodation'});
+    };
     if (hSel.value) {
         const h = habitacionesData.find(h=>String(h.IDHabitacion)===String(hSel.value));
-        if (h) {
-            const pn = parseFloat(h.Costo||h.precio||0);
-            const sub = noches>0?pn*noches:0;
-            items.push({name:h.NombreHabitacion,val:sub,detail:noches>0?`$${formatCurrency(pn)}/noche × ${noches} noches`:'',type:'accommodation'});
-        }
+        if (h) _pushAloj(h.NombreHabitacion, parseFloat(h.Costo||h.precio||0), h.CapacidadPersonas);
     } else if (cSel.value) {
         const c = cabanasData.find(c=>String(c.IDCabana)===String(cSel.value));
-        if (c) {
-            const pn = parseFloat(c.PrecioNoche||0);
-            const sub = noches>0?pn*noches:0;
-            items.push({name:c.NombreCabana,val:sub,detail:noches>0?`$${formatCurrency(pn)}/noche × ${noches} noches`:'',type:'accommodation'});
-        }
+        if (c) _pushAloj(c.NombreCabana, parseFloat(c.PrecioNoche||0), c.CapacidadPersonas);
     } else if (pSel.value) {
         const p = paquetesData.find(p=>String(p.IDPaquete)===String(pSel.value));
-        if (p) {
-            const pn = parseFloat(p.Precio||p.precio||0);
-            const sub = noches>0?pn*noches:0;
-            items.push({name:p.NombrePaquete||'Paquete',val:sub,detail:noches>0?`$${formatCurrency(pn)}/noche × ${noches} noches`:'',type:'accommodation'});
-        }
+        if (p) _pushAloj(p.NombrePaquete||'Paquete', parseFloat(p.Precio||p.precio||0), p.NumeroPersonas);
     }
     document.querySelectorAll('.servicio-check:checked').forEach(cb=>{
         const s = serviciosData.find(s=>String(s.IDServicio)===String(cb.value));
@@ -779,8 +778,54 @@ function cerrarModal() {
 /* ──────────────────────────────────────────────────
    CALCULAR TOTAL
 ────────────────────────────────────────────────── */
+// Devuelve el precio/noche de un alojamiento con el recargo de ocupación aplicado,
+// más la capacidad máxima para validación. Retorna { precioConRecargo, capacidad, extra }
+function getPrecioConOcupacion(precioBase, huespedes, capacidad) {
+    const std = precioConfig.ocupacionEstandar || 2;
+    const pct = precioConfig.porcentajePersonaExtra || 0.40;
+    const personasExtra = Math.max(0, huespedes - std);
+    const recargo = personasExtra * (precioBase * pct);
+    return { precioConRecargo: precioBase + recargo, capacidad, extra: personasExtra, recargo };
+}
+
+// Valida capacidad del alojamiento activo y recalcula. Muestra aviso inline.
+function validarCapacidadYRecalcular() {
+    const huespedes = parseInt(document.getElementById('CantidadHuespedes')?.value) || 1;
+    const avisoEl = document.getElementById('avisoCapacidad');
+    let capacidad = null;
+
+    const hSel = document.getElementById('IDHabitacion');
+    const cSel = document.getElementById('IDCabana');
+    const pSel = document.getElementById('IDPaquete');
+    if (hSel?.value) {
+        const h = habitacionesData.find(h => String(h.IDHabitacion) === String(hSel.value));
+        capacidad = h?.CapacidadPersonas || null;
+    } else if (cSel?.value) {
+        const c = cabanasData.find(c => String(c.IDCabana) === String(cSel.value));
+        capacidad = c?.CapacidadPersonas || null;
+    } else if (pSel?.value) {
+        const p = paquetesData.find(p => String(p.IDPaquete) === String(pSel.value));
+        capacidad = p?.NumeroPersonas || null;
+    }
+
+    if (avisoEl) {
+        if (capacidad !== null && huespedes > capacidad) {
+            avisoEl.textContent = `⚠️ La capacidad máxima de este alojamiento es ${capacidad} persona(s).`;
+            avisoEl.style.display = 'block';
+            const btn = document.querySelector('.nr-btn-confirmar');
+            if (btn) btn.disabled = true;
+        } else {
+            avisoEl.style.display = 'none';
+            const btn = document.querySelector('.nr-btn-confirmar');
+            if (btn) btn.disabled = false;
+        }
+    }
+    calcularTotal();
+}
+
 function calcularTotal() {
     const noches = actualizarContadorNoches();
+    const huespedes = parseInt(document.getElementById('CantidadHuespedes')?.value) || 1;
     const animate = (elId, newVal) => {
         const el = document.getElementById(elId);
         if (!el) return;
@@ -789,23 +834,24 @@ function calcularTotal() {
         setTimeout(() => { el.textContent = `$${formatCurrency(newVal)}`; el.style.opacity = '1'; }, 120);
     };
 
-    // Alojamiento — solo se multiplica si hay noches (si no hay fechas = $0, pero servicios sí suman)
-    let precioAloj = 0;
+    // Alojamiento con recargo de ocupación — solo se multiplica si hay noches
+    let precioAlojNoche = 0;
     if (noches > 0) {
         const hSel = document.getElementById('IDHabitacion');
         const cSel = document.getElementById('IDCabana');
         const pSel = document.getElementById('IDPaquete');
-        if (hSel.value) {
+        if (hSel?.value) {
             const h = habitacionesData.find(h => String(h.IDHabitacion) === String(hSel.value));
-            if (h) precioAloj = parseFloat(h.Costo || h.precio || 0) * noches;
-        } else if (cSel.value) {
+            if (h) { const r = getPrecioConOcupacion(parseFloat(h.Costo || h.precio || 0), huespedes, h.CapacidadPersonas); precioAlojNoche = r.precioConRecargo; }
+        } else if (cSel?.value) {
             const c = cabanasData.find(c => String(c.IDCabana) === String(cSel.value));
-            if (c) precioAloj = parseFloat(c.PrecioNoche || 0) * noches;
-        } else if (pSel.value) {
+            if (c) { const r = getPrecioConOcupacion(parseFloat(c.PrecioNoche || 0), huespedes, c.CapacidadPersonas); precioAlojNoche = r.precioConRecargo; }
+        } else if (pSel?.value) {
             const p = paquetesData.find(p => String(p.IDPaquete) === String(pSel.value));
-            if (p) precioAloj = parseFloat(p.Precio || p.precio || 0) * noches;
+            if (p) { const r = getPrecioConOcupacion(parseFloat(p.Precio || p.precio || 0), huespedes, p.NumeroPersonas); precioAlojNoche = r.precioConRecargo; }
         }
     }
+    const precioAloj = precioAlojNoche * (noches > 0 ? noches : 0);
 
     // Servicios — siempre se calculan aunque no haya fechas aún
     const totalServ = Array.from(document.querySelectorAll('.servicio-check:checked'))
@@ -1000,7 +1046,8 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
         cargarCabanas(),
         cargarPaquetes(),
         cargarServicios(),
-        cargarMetodosPago()
+        cargarMetodosPago(),
+        fetch('/api/config/precios').then(r => r.json()).then(cfg => { precioConfig = cfg; }).catch(() => {})
     ]);
 
     updateDateLimits();
@@ -1029,6 +1076,12 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
 
     actualizarContadorNoches();
     calcularTotal();
+
+    // Recalcular y validar capacidad cuando cambia la cantidad de huéspedes
+    const huespInput = document.getElementById('CantidadHuespedes');
+    if (huespInput) {
+        huespInput.addEventListener('input', () => { validarCapacidadYRecalcular(); });
+    }
 
     // Búsqueda de cliente por documento — autocomplete instantáneo
     const inp = document.getElementById('buscarDocumento');
