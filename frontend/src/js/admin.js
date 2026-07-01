@@ -289,7 +289,7 @@ function renderReservas(reservas, kpis) {
 
     function formatFecha(f) {
         if (!f) return '—';
-        return new Date(f).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+        return new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' });
     }
 
     function diasRestantes(fin) {
@@ -515,7 +515,7 @@ window.verDetalleReserva = async (id) => {
         };
         const key = (r.NombreEstadoReserva || '').toLowerCase();
         const cfg = estadoConfig[key] || { color: '#6b7280', bg: 'rgba(107,114,128,0.15)', icon: 'help-circle' };
-        const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+        const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '—';
         const montoFmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO');
         const alojamiento = r.NombreHabitacion || r.NombreCabana || r.NombrePaquete || '—';
         const serviciosHtml = (r.servicios && r.servicios.length > 0)
@@ -647,6 +647,24 @@ window.erAjustarCantidad = function(id, delta) {
     erRecalcular();
 };
 
+// Replica la lógica de temporada del backend para el estimado del modal de edición.
+// Alta ×1.30 (15 dic–15 ene), Semana Santa ×1.25 (20 mar–10 abr), Julio ×1.15.
+function getSeasonalMultiplier(fechaInicio, fechaFin) {
+    if (!fechaInicio || !fechaFin) return 1.0;
+    const cur = new Date(fechaInicio + 'T12:00:00');
+    const fin = new Date(fechaFin + 'T12:00:00');
+    let mult = 1.0;
+    while (cur < fin) {
+        const m = cur.getMonth() + 1;
+        const d = cur.getDate();
+        if ((m === 12 && d >= 15) || (m === 1 && d <= 15)) { if (1.30 > mult) mult = 1.30; }
+        else if ((m === 3 && d >= 20) || (m === 4 && d <= 10)) { if (1.25 > mult) mult = 1.25; }
+        else if (m === 7) { if (1.15 > mult) mult = 1.15; }
+        cur.setDate(cur.getDate() + 1);
+    }
+    return mult;
+}
+
 // ── Recalcula el monto total visible en el modal de edición ──────────────────
 function erRecalcular() {
     const inicio = document.getElementById('er_fechaInicio')?.value;
@@ -654,6 +672,7 @@ function erRecalcular() {
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
         ? Math.round((new Date(fin) - new Date(inicio)) / 86400000)
         : 1;
+    const mult = getSeasonalMultiplier(inicio, fin);
     const alojSelect    = document.getElementById('er_alojamiento');
     const alojPrecio    = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
     const paqAdicSelect = document.getElementById('er_paqueteAdicional');
@@ -670,9 +689,9 @@ function erRecalcular() {
         const lbl = document.querySelector(`.er-srv-total[data-servicio-id="${cb.value}"]`);
         if (lbl) lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : '';
     });
-    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
+    const total = (alojPrecio + paqAdicPrecio) * noches * mult + totalServicios;
     const el = document.getElementById('er_monto');
-    if (el) el.value = `$${total.toLocaleString('es-CO')}`;
+    if (el) el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
 
 window.editarReserva = async (id) => {
@@ -696,6 +715,7 @@ window.editarReserva = async (id) => {
         const servicios    = (await resSrv.json()).filter(s => s.Estado !== 0);
 
         const fmt = f => f ? new Date(f).toISOString().split('T')[0] : '';
+        const esEnProceso = r.IdEstadoReserva === 5;
 
         // Determinar tipo de alojamiento y paquete adicional.
         // Habitación/cabaña tienen prioridad; el paquete puede ser standalone o adicional.
@@ -737,7 +757,8 @@ window.editarReserva = async (id) => {
             const labels = { habitacion:'🛏 Habitación', cabana:'🏕 Cabaña', paquete:'📦 Paquete' };
             const activo = t === tipoActual;
             return `<button type="button" class="er-tipo-btn${activo?' er-tipo-btn--activo':''}" data-tipo="${t}"
-                        style="flex:1;padding:0.45rem 0;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;border:1.5px solid;
+                        ${esEnProceso ? 'disabled' : ''}
+                        style="flex:1;padding:0.45rem 0;border-radius:8px;font-size:0.78rem;font-weight:700;${esEnProceso ? 'cursor:not-allowed;opacity:0.65;' : 'cursor:pointer;'}border:1.5px solid;
                                ${activo?'background:#2B6CB0;color:#fff;border-color:#2B6CB0':'background:#fff;color:#2B6CB0;border-color:rgba(43,108,176,0.3)'};">
                         ${labels[t]}</button>`;
         }).join('');
@@ -751,14 +772,16 @@ window.editarReserva = async (id) => {
             <form id="formEditarReserva" style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
                 <input type="hidden" id="er_tipoAloj" value="${tipoActual}">
 
+                ${esEnProceso ? '<div style="grid-column:1/-1;display:flex;align-items:flex-start;gap:0.6rem;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.35);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.79rem;color:#0D9488;margin-bottom:0.1rem;">🔒 <span><strong>Reserva En Proceso</strong> — El huésped ya realizó check-in. Las fechas y el alojamiento están bloqueados. Solo puedes modificar los servicios adicionales.</span></div>' : ''}
+
                 <!-- Fechas -->
                 <div class="form-group">
                     <label>📅 FECHA CHECK-IN</label>
-                    <input type="date" id="er_fechaInicio" value="${fmt(r.FechaInicio)}" class="form-input" required>
+                    <input type="date" id="er_fechaInicio" value="${fmt(r.FechaInicio)}" class="form-input" required ${esEnProceso ? 'disabled style="opacity:0.7;background:rgba(0,0,0,0.04);"' : ''}>
                 </div>
                 <div class="form-group">
                     <label>📅 FECHA CHECK-OUT</label>
-                    <input type="date" id="er_fechaFin" value="${fmt(r.FechaFinalizacion)}" class="form-input" required>
+                    <input type="date" id="er_fechaFin" value="${fmt(r.FechaFinalizacion)}" class="form-input" required ${esEnProceso ? 'disabled style="opacity:0.7;background:rgba(0,0,0,0.04);"' : ''}>
                 </div>
 
                 <!-- Estado / Método -->
@@ -782,13 +805,13 @@ window.editarReserva = async (id) => {
                 </div>
                 <div class="form-group" style="grid-column:1/-1;">
                     <label id="er_aloj_label" style="font-size:0.72rem;">Selecciona una opción</label>
-                    <select id="er_alojamiento" class="form-input">
+                    <select id="er_alojamiento" class="form-input" ${esEnProceso ? 'disabled style="opacity:0.7;background:rgba(0,0,0,0.04);"' : ''}>
                         ${renderOpciones(tipoActual, idAlojActual)}
                     </select>
                 </div>
 
                 <!-- Paquete adicional (visible cuando el alojamiento es habitación o cabaña) -->
-                <div id="er_paquete_adicional_wrap" class="form-group" style="grid-column:1/-1;${tipoActual === 'paquete' ? 'display:none;' : ''}">
+                <div id="er_paquete_adicional_wrap" class="form-group" style="grid-column:1/-1;${tipoActual === 'paquete' ? 'display:none;' : ''}${esEnProceso ? 'opacity:0.6;pointer-events:none;' : ''}">
                     <label style="font-size:0.72rem;">📦 PAQUETE ADICIONAL <span style="font-weight:400;color:rgba(26,43,74,0.5);">(opcional)</span></label>
                     <select id="er_paqueteAdicional" class="form-input" onchange="erRecalcular()">
                         <option value="">Sin paquete adicional</option>
@@ -823,9 +846,9 @@ window.editarReserva = async (id) => {
                 <!-- Monto total -->
                 ${separador('💰','Resumen')}
                 <div class="form-group" style="grid-column:1/-1;">
-                    <label>MONTO TOTAL ESTIMADO</label>
+                    <label>MONTO TOTAL ESTIMADO <span style="font-size:0.65rem;font-weight:400;color:rgba(26,43,74,0.5);">(incluye recargo de temporada; el definitivo lo recalcula el servidor al guardar)</span></label>
                     <input type="text" id="er_monto" readonly class="form-input"
-                        title="Calculado automáticamente según alojamiento, noches y servicios seleccionados."
+                        title="Calculado automáticamente según alojamiento, noches y servicios seleccionados. Puede variar por ocupación."
                         style="background:rgba(43,108,176,0.05);border-color:rgba(43,108,176,0.2);color:#1A2B4A;cursor:not-allowed;font-size:1.05rem;font-weight:700;letter-spacing:0.01em;">
                 </div>
 
@@ -836,8 +859,10 @@ window.editarReserva = async (id) => {
                 </div>
             </form>`;
 
-        // Recalcular monto inicial
-        erRecalcular();
+        // Mostrar total guardado en BD; si el usuario cambia algo, erRecalcular() lo actualizará
+        const _montoEl = document.getElementById('er_monto');
+        if (_montoEl) _montoEl.value = `$${Number(r.MontoTotal || 0).toLocaleString('es-CO')}`;
+        if (!esEnProceso) erRecalcular();
 
         // Tabs de tipo de alojamiento
         document.querySelectorAll('.er-tipo-btn').forEach(btn => {

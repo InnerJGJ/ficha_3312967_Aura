@@ -551,6 +551,18 @@ const updateReservation = async (id, data) => {
 
     // 1. Si SOLO viene IdEstadoReserva, hacemos un update rápido y salimos
     const keys = Object.keys(data);
+
+    // Bloquear cambios de fechas/alojamiento cuando el huésped ya está En Proceso
+    if (check[0].IdEstadoReserva === ESTADO_EN_PROCESO) {
+      const camposBloqueados = ['FechaInicio', 'FechaFinalizacion', 'IDHabitacion', 'IDCabana', 'IDPaquete'];
+      if (camposBloqueados.some(k => data[k] !== undefined)) {
+        await connection.rollback();
+        const err = new Error('No se pueden modificar las fechas ni el alojamiento de una reserva que ya está En Proceso. Solo es posible ajustar los servicios adicionales.');
+        err.statusCode = 422;
+        throw err;
+      }
+    }
+
     if (keys.length === 1 && keys[0] === 'IdEstadoReserva') {
       await connection.query('UPDATE reserva SET IdEstadoReserva = ? WHERE IdReserva = ?', [data.IdEstadoReserva, id]);
       await connection.commit();

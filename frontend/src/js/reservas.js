@@ -243,7 +243,7 @@ async function loadReservations() {
                     </h3>
                     <p><strong>Habitación:</strong> ${r.NombreHabitacion || 'Sin asignar'}</p>
                     <p><strong>Paquete:</strong> ${r.NombrePaquete || 'Sin paquete'}</p>
-                    <p><strong>Fechas:</strong> ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString() : '-'} – ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString() : '-'}</p>
+                    <p><strong>Fechas:</strong> ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'} – ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
                     <p><strong>Total:</strong> ${formatCurrency(r.MontoTotal || 0)}</p>
                 </div>
                 <div class="reservation-actions">
@@ -316,8 +316,8 @@ function buildReservationDetails(r) {
                         </div>
                         <div class="detail-info-group">
                             <label>Estadía</label>
-                            <p>Inicio: ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString() : '-'}</p>
-                            <p>Fin: ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString() : '-'}</p>
+                            <p>Inicio: ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
+                            <p>Fin: ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
                         </div>
                     </div>
 
