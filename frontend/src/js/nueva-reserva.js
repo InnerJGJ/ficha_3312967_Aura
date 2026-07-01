@@ -16,7 +16,7 @@ let fpStart = null;
 let fpEnd = null;
 
 // Config de precios — se carga desde /api/config/precios al iniciar
-let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 2 };
+let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 1 };
 
 /* -----------------------------------------------
    UTILIDADES DE FECHA
