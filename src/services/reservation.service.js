@@ -298,7 +298,9 @@ const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, 
     noches = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
   }
 
-  const { multiplicador, temporada } = getSeasonalInfo(FechaInicio, FechaFinalizacion);
+  // NOTA: Los precios son fijos todo el año — NO se aplica multiplicador de temporada.
+  // El precio en BD ya es el precio final del negocio.
+  const multiplicador = 1.0;
 
   const paq  = await getPackagePrice(IDPaquete);
   const hab  = await getHabitacionPrice(IDHabitacion);
@@ -313,15 +315,15 @@ const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, 
     throw err;
   }
 
-  // Precio base por noche con recargo de ocupación (formula: precio_base + personas_extra × precio_base × PORCENTAJE)
+  // Precio base por noche con recargo de ocupación (precio_base + personas_extra × precio_base × PORCENTAJE)
   const paqueteBaseNoche    = calcularPrecioConOcupacion(paq.precio, paq.precio > 0 ? huespedes : 0);
   const habitacionBaseNoche = calcularPrecioConOcupacion(hab.precio, hab.precio > 0 ? huespedes : 0);
   const cabanaBaseNoche     = calcularPrecioConOcupacion(cab.precio, cab.precio > 0 ? huespedes : 0);
 
-  // Multiplicar por noches y por temporada (solo alojamiento, no servicios adicionales)
-  const paquetePrecio    = parseFloat((paqueteBaseNoche    * noches * multiplicador).toFixed(2));
-  const habitacionPrecio = parseFloat((habitacionBaseNoche * noches * multiplicador).toFixed(2));
-  const cabanaPrecio     = parseFloat((cabanaBaseNoche     * noches * multiplicador).toFixed(2));
+  // Precio final por alojamiento = precio_noche × noches (sin multiplicador de temporada)
+  const paquetePrecio    = parseFloat((paqueteBaseNoche    * noches).toFixed(2));
+  const habitacionPrecio = parseFloat((habitacionBaseNoche * noches).toFixed(2));
+  const cabanaPrecio     = parseFloat((cabanaBaseNoche     * noches).toFixed(2));
 
   const servicios = Array.isArray(servicioRows)
     ? servicioRows.map(row => {
@@ -346,9 +348,7 @@ const calculateTotals = async (IDPaquete, IDHabitacion, IDCabana, servicioRows, 
     subtotal,
     iva,
     total,
-    noches,
-    temporada,
-    multiplicadorTemporada: multiplicador
+    noches
   };
 };
 

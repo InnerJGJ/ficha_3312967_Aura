@@ -800,8 +800,8 @@ function cerrarModal() {
 /* ──────────────────────────────────────────────────
    CALCULAR TOTAL
 ────────────────────────────────────────────────── */
-// Devuelve el precio/noche de un alojamiento con el recargo de ocupación aplicado,
-// más la capacidad máxima para validación. Retorna { precioConRecargo, capacidad, extra }
+// Devuelve el precio/noche de un alojamiento con el recargo de ocupación aplicado.
+// Los precios son fijos todo el año — NO existe multiplicador de temporada.
 function getPrecioConOcupacion(precioBase, huespedes, capacidad) {
     const std = precioConfig.ocupacionEstandar || 2;
     const pct = precioConfig.porcentajePersonaExtra || 0.40;

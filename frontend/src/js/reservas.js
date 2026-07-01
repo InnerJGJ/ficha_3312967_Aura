@@ -613,8 +613,9 @@ function calcularTotalEdicion() {
             return sum + Number(cb.dataset.costo || 0) * qty;
         }, 0);
 
-    const subtotal = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
-    el.value = `$${(subtotal + subtotal * 0.19).toLocaleString('es-CO')}`;
+    // Los precios ya incluyen IVA — el total es la suma directa (igual que el backend y nueva reserva)
+    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
+    el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
 
 async function guardarEdicion() {

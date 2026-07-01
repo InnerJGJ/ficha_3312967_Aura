@@ -813,7 +813,8 @@ function erRecalcular() {
         const lbl = document.querySelector(`.er-srv-total[data-servicio-id="${cb.value}"]`);
         if (lbl) lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : '';
     });
-    const total = (alojPrecio + paqAdicPrecio) * noches * mult + totalServicios;
+    // Precios fijos todo el año — sin multiplicador de temporada
+    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
     const el = document.getElementById('er_monto');
     if (el) el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
