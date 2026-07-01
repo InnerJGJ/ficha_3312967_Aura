@@ -711,7 +711,7 @@ window.verDetalleReserva = async (id) => {
 
           <div class="inv-footer">
             <button class="inv-btn inv-btn--ghost" onclick="window.print()">Imprimir</button>
-            <button class="inv-btn inv-btn--primary" onclick="editarReserva(${r.IdReserva});cerrarDetalle();">Editar Reserva</button>
+            ${![3, 4].includes(r.IdEstadoReserva) ? `<button class="inv-btn inv-btn--primary" onclick="editarReserva(${r.IdReserva});cerrarDetalle();">Editar Reserva</button>` : ''}
             <button class="inv-btn inv-btn--outline" onclick="cerrarDetalle()">Cerrar</button>
           </div>
 
