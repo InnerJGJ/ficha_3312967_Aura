@@ -16,7 +16,7 @@ let fpStart = null;
 let fpEnd = null;
 
 // Config de precios — se carga desde /api/config/precios al iniciar
-let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 1 };
+let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 2 };
 
 /* -----------------------------------------------
    UTILIDADES DE FECHA
@@ -263,9 +263,10 @@ function validarCapacidadYRecalcular() {
     if (hS?.value) { const h = habitacionesData.find(h => String(h.IDHabitacion) === String(hS.value)); capacidad = h?.CapacidadPersonas || null; }
     else if (cS?.value) { const c = cabanasData.find(c => String(c.IDCabana) === String(cS.value)); capacidad = c?.CapacidadPersonas || null; }
     else if (pS?.value) { const p = paquetesData.find(p => String(p.IDPaquete) === String(pS.value)); capacidad = p?.NumeroPersonas || null; }
+    const limite = Math.min(capacidad ?? 4, 4);
     if (avisoEl) {
-        if (capacidad !== null && huespedes > capacidad) {
-            avisoEl.textContent = `⚠️ La capacidad máxima de este alojamiento es ${capacidad} persona(s).`;
+        if (huespedes > limite) {
+            avisoEl.textContent = `⚠️ La capacidad máxima es ${limite} persona(s).`;
             avisoEl.style.display = 'block';
             const btn = document.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
@@ -890,7 +891,7 @@ function mostrarDetalleCabana(id) {
     card.innerHTML = `
         <h4>${c.NombreCabana}</h4>
         <p>${c.Descripcion || 'Cabaña acogedora rodeada de naturaleza.'}</p>
-        <p><span class="icon">👥</span> Capacidad: ${c.CapacidadPersonas} personas</p>
+        <p><span class="icon">👥</span> Capacidad: máximo 4 personas</p>
         <p><span class="icon">🛏️</span> Habitaciones: ${c.NumeroHabitaciones || 1}</p>
         <span class="precio-tag">$${c.PrecioNoche.toLocaleString()} / noche</span>
     `;
@@ -979,7 +980,7 @@ async function mostrarPreviewItem(type, id) {
                 <h3>${title}</h3>
                 <p class="nr-preview-desc">${descripcion}</p>
                 <div class="nr-preview-meta">
-                    ${capacidad ? `<span>👥 ${capacidad} personas</span>` : ''}
+                    <span>👥 máximo 4 personas</span>
                     ${habitaciones ? `<span>🛏️ ${habitaciones} hab.</span>` : ''}
                 </div>
                 <div class="nr-preview-price">$${Number(precio).toLocaleString()} / noche</div>
@@ -1027,8 +1028,8 @@ function mostrarModalDetalle(type, id) {
         precio       = data.Costo || data.precio || 0;
         sufijoPrecio = '/ noche';
         stats = [
-            data.CapacidadPersonas  ? `👥 ${data.CapacidadPersonas} personas`   : null,
-            data.NumeroHabitaciones ? `🛏️ ${data.NumeroHabitaciones} hab.`      : null,
+            '👥 máximo 4 personas',
+            data.NumeroHabitaciones ? `🛏️ ${data.NumeroHabitaciones} hab.` : null,
         ].filter(Boolean);
         const iconosHab = {
             'Cabaña Simple':   ['🌲 Vista al bosque','🛏️ Cama individual','🪵 Decoración rústica','👤 Ideal para 1 persona'],
@@ -1045,8 +1046,8 @@ function mostrarModalDetalle(type, id) {
         precio       = data.PrecioNoche || data.precio || 0;
         sufijoPrecio = '/ noche';
         stats = [
-            data.CapacidadPersonas  ? `👥 ${data.CapacidadPersonas} personas`   : null,
-            data.NumeroHabitaciones ? `🛏️ ${data.NumeroHabitaciones} hab.`      : null,
+            '👥 máximo 4 personas',
+            data.NumeroHabitaciones ? `🛏️ ${data.NumeroHabitaciones} hab.` : null,
         ].filter(Boolean);
         incluidos = ['🌲 Entorno natural','🏡 Espacio privado','☕ Comodidades completas','🔒 Acceso exclusivo'];
     } else {

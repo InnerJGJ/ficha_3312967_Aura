@@ -16,5 +16,5 @@ module.exports = {
   // Personas incluidas en el precio base de cualquier alojamiento/paquete.
   // El recargo empieza a partir de la persona numero (OCUPACION_ESTANDAR + 1).
   // Env: OCUPACION_ESTANDAR_PERSONAS
-  OCUPACION_ESTANDAR_PERSONAS: Number(process.env.OCUPACION_ESTANDAR_PERSONAS) || 1,
+  OCUPACION_ESTANDAR_PERSONAS: Number(process.env.OCUPACION_ESTANDAR_PERSONAS) || 2,
 };
