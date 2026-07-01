@@ -560,6 +560,8 @@ function populateEditForm(reservation) {
         const pw = document.getElementById('editPaqueteAdicionalWrap');
         if (pw) pw.style.display = 'none';
     }
+    const montoLabel = document.getElementById('editMontoTotalLabel');
+    if (montoLabel) montoLabel.textContent = esReservaEnProceso ? 'Cargo adicional (nuevos servicios)' : 'Monto Total Estimado';
 }
 
 window.editAjustarCantidad = function(id, delta) {
@@ -610,6 +612,30 @@ function renderServiciosCheckboxes(selectedServices = []) {
 }
 
 function calcularTotalEdicion() {
+    // Actualizar etiquetas de total por servicio
+    document.querySelectorAll('.edit-servicio-check').forEach(cb => {
+        const qty = parseInt(document.querySelector(`.edit-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
+        const t = Number(cb.dataset.costo || 0) * qty;
+        const lbl = document.querySelector(`.edit-srv-total[data-servicio-id="${cb.value}"]`);
+        if (lbl) { lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : ''; }
+    });
+
+    const el = document.getElementById('editMontoTotal');
+    if (!el) return;
+
+    if (esReservaEnProceso) {
+        // En Proceso: solo sumar servicios NUEVOS (los que no estaban ya en la reserva)
+        const totalNuevos = Array.from(document.querySelectorAll('.edit-servicio-check:checked'))
+            .filter(cb => !serviciosExistentesIds.has(Number(cb.value)))
+            .reduce((sum, cb) => {
+                const qty = parseInt(document.querySelector(`.edit-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
+                return sum + Number(cb.dataset.costo || 0) * qty;
+            }, 0);
+        el.value = `$${totalNuevos.toLocaleString('es-CO')}`;
+        return;
+    }
+
+    // Reserva normal: cálculo completo
     const inicio = document.getElementById('editFechaInicio')?.value;
     const fin    = document.getElementById('editFechaFinalizacion')?.value;
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
@@ -626,19 +652,8 @@ function calcularTotalEdicion() {
             return sum + Number(cb.dataset.costo || 0) * qty;
         }, 0);
 
-    // Actualizar totales por servicio
-    document.querySelectorAll('.edit-servicio-check').forEach(cb => {
-        const qty = parseInt(document.querySelector(`.edit-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
-        const t = Number(cb.dataset.costo || 0) * qty;
-        const lbl = document.querySelector(`.edit-srv-total[data-servicio-id="${cb.value}"]`);
-        if (lbl) { lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : ''; lbl.style.color = '#2B6CB0'; }
-    });
-
     const subtotal = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
-    const total    = subtotal + subtotal * 0.19;
-
-    const el = document.getElementById('editMontoTotal');
-    if (el) el.value = `$${total.toLocaleString('es-CO')}`;
+    el.value = `$${(subtotal + subtotal * 0.19).toLocaleString('es-CO')}`;
 }
 
 async function guardarEdicion() {
