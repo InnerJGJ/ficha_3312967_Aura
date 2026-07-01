@@ -2715,6 +2715,7 @@ window.editarPaquete = async (id) => {
         document.getElementById('modalTitle').textContent = 'Editar Paquete';
         document.getElementById('modalContent').innerHTML = renderForm('paquetes', data, extra);
         document.getElementById('modalOverlay').classList.add('activo');
+        window.calcularPrecioPaquete?.();
     } catch (e) { mostrarNotificacion('Error al cargar datos del paquete.', 'error'); }
 };
 window.eliminarPaquete = async (id) => {
