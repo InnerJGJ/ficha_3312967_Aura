@@ -281,19 +281,47 @@ async function loadReservationDetails(id) {
 }
 
 function buildReservationDetails(r) {
-    const serviciosHtml = (r.servicios || []).length > 0
-        ? `<div class="details-services-grid">${r.servicios.map(s => {
-            const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
-            const cant = s.Cantidad || 1;
-            const totalS = s.Subtotal || (precioUnit * cant);
-            const porPersonas = cant > 1 ? ` <span style="opacity:0.65;font-size:0.8em;">(x${cant} personas)</span>` : '';
-            return `
-            <div class="detail-service-item">
-                <span class="service-name">${s.NombreServicio || s.nombre}</span>
-                <span class="service-price">$${Number(totalS).toLocaleString('es-CO')}${porPersonas}</span>
+    const todosServicios = r.servicios || [];
+    const serviciosOriginales = todosServicios.filter(s => !s.AgregadoEnProceso);
+    const serviciosEnProceso  = todosServicios.filter(s =>  s.AgregadoEnProceso);
+    const serviciosPendientes = serviciosEnProceso.filter(s => !s.Pagado);
+    const montoAdicionalPend  = serviciosPendientes.reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
+
+    const renderServiceItem = (s, pendiente = false) => {
+        const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
+        const cant = s.Cantidad || 1;
+        const totalS = s.Subtotal || (precioUnit * cant);
+        const porPersonas = cant > 1 ? ` <span style="opacity:0.65;font-size:0.8em;">(x${cant})</span>` : '';
+        const badge = pendiente
+            ? `<span style="font-size:0.7rem;background:rgba(251,191,36,0.2);color:#fbbf24;border-radius:4px;padding:1px 5px;margin-left:4px;">Pendiente</span>`
+            : (s.Pagado ? `<span style="font-size:0.7rem;background:rgba(16,185,129,0.2);color:#10b981;border-radius:4px;padding:1px 5px;margin-left:4px;">Pagado</span>` : '');
+        return `
+        <div class="detail-service-item">
+            <span class="service-name">${s.NombreServicio || s.nombre}${badge}</span>
+            <span class="service-price">$${Number(totalS).toLocaleString('es-CO')}${porPersonas}</span>
+        </div>`;
+    };
+
+    const serviciosOrigHtml = serviciosOriginales.length > 0
+        ? `<div class="details-services-grid">${serviciosOriginales.map(s => renderServiceItem(s)).join('')}</div>`
+        : '<p style="color: rgba(255,255,255,0.4); margin: 0;">Sin servicios adicionales.</p>';
+
+    const serviciosEnProcHtml = serviciosEnProceso.length > 0
+        ? `<div style="margin-top:0.75rem;">
+            <p style="font-size:0.78rem;color:rgba(251,191,36,0.9);font-weight:600;margin:0 0 0.4rem;">Agregados durante la estadía:</p>
+            <div class="details-services-grid">${serviciosEnProceso.map(s => renderServiceItem(s, !s.Pagado)).join('')}</div>
+           </div>`
+        : '';
+
+    const avisoHtml = montoAdicionalPend > 0
+        ? `<div style="margin:1rem 0;padding:0.8rem 1rem;background:rgba(251,191,36,0.1);border:1.5px solid rgba(251,191,36,0.4);border-radius:10px;display:flex;align-items:flex-start;gap:0.5rem;">
+            <span style="font-size:1.1rem;flex-shrink:0;">⚠️</span>
+            <div style="font-size:0.82rem;color:rgba(251,191,36,0.95);line-height:1.5;">
+                <strong>Tienes $${montoAdicionalPend.toLocaleString('es-CO')} en servicios adicionales pendientes de pago.</strong><br>
+                Debes cancelarlos antes o durante el check-out para poder completar tu reserva.
             </div>
-          `;}).join('')}</div>`
-        : '<p style="color: rgba(255,255,255,0.4); margin: 0;">No hay servicios adicionales.</p>';
+           </div>`
+        : '';
 
     return `
         <div class="reservation-details-premium">
@@ -335,9 +363,11 @@ function buildReservationDetails(r) {
                     </div>
 
                     <div class="nr-card" style="padding: 1.25rem;">
-                        <div class="nr-card__titulo">Servicios Adicionales</div>
-                        ${serviciosHtml}
+                        <div class="nr-card__titulo">Servicios incluidos en la reserva</div>
+                        ${serviciosOrigHtml}
+                        ${serviciosEnProcHtml}
                     </div>
+                    ${avisoHtml}
                 </div>
 
                 <!-- Lado Derecho: Resumen Financiero -->
@@ -360,9 +390,20 @@ function buildReservationDetails(r) {
                         <span>${formatCurrency(r.IVA || 0)}</span>
                     </div>
                     <div class="nr-resumen__total">
-                        <span>Total Pagado</span>
+                        <span>Total pagado</span>
                         <span>${formatCurrency(r.MontoTotal || 0)}</span>
                     </div>
+                    ${montoAdicionalPend > 0 ? `
+                    <div style="margin-top:0.5rem;padding:0.6rem 0.75rem;background:rgba(251,191,36,0.12);border-radius:8px;border:1px solid rgba(251,191,36,0.35);">
+                        <div style="display:flex;justify-content:space-between;font-size:0.83rem;color:rgba(251,191,36,0.9);">
+                            <span>Servicios adicionales pendientes</span>
+                            <strong>${formatCurrency(montoAdicionalPend)}</strong>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700;color:#fff;margin-top:0.3rem;padding-top:0.3rem;border-top:1px solid rgba(251,191,36,0.3);">
+                            <span>Total acumulado</span>
+                            <span>${formatCurrency(Number(r.MontoTotal || 0) + montoAdicionalPend)}</span>
+                        </div>
+                    </div>` : ''}
                     
                     <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
                         ${[3, 4].includes(r.IdEstadoReserva) ? '' : `<button class="btn btn-primario" onclick="abrirEdicion(${r.IdReserva})">Editar Reserva</button>`}

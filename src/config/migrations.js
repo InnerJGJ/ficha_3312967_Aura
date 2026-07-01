@@ -68,6 +68,12 @@ const runMigrations = async () => {
       ALTER TABLE paquetes MODIFY COLUMN IDServicio VARCHAR(255) NULL DEFAULT NULL
     `).catch(() => {}); // silenciar si ya es compatible
 
+    // Servicios adicionales agregados durante estadía (En Proceso)
+    await addColumnIfMissing('detallereservaservicio', 'AgregadoEnProceso', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await addColumnIfMissing('detallereservaservicio', 'Pagado', 'TINYINT(1) NOT NULL DEFAULT 0');
+    // Monto adicional pendiente en reserva (suma de servicios AgregadoEnProceso=1 y Pagado=0)
+    await addColumnIfMissing('reserva', 'MontoAdicional', 'DECIMAL(10,2) NOT NULL DEFAULT 0');
+
     console.log('[migration] all migrations OK');
   } catch (err) {
     console.error('[migration] Error:', err.message);

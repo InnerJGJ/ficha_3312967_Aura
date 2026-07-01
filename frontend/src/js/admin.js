@@ -407,6 +407,11 @@ function renderReservas(reservas, kpis) {
                                 <div><span class="reserva-card__detalle-label">Total</span><span class="reserva-card__detalle-val reserva-card__total">$${(r.MontoTotal || 0).toLocaleString('es-CO')}</span></div>
                             </div>
                         </div>
+                        ${r.MontoAdicional > 0 ? `
+                        <div style="margin-top:0.5rem;padding:0.45rem 0.7rem;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);border-radius:7px;display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:#b45309;font-weight:600;">
+                            <i data-lucide="alert-circle" style="width:13px;flex-shrink:0;"></i>
+                            Servicios adicionales pendientes: $${Number(r.MontoAdicional).toLocaleString('es-CO')}
+                        </div>` : ''}
                     </div>
                     <div class="reserva-card__footer">
                         <span class="reserva-card__footer-left">${diasTxt}</span>
@@ -464,14 +469,20 @@ function filtrarReservas(estado, btn) {
     });
 }
 
-async function cambiarEstado(idReserva, idEstado, selectEl = null) {
+async function cambiarEstado(idReserva, idEstado, selectEl = null, confirmarPagoAdicional = false) {
     const estadoOriginal = selectEl ? selectEl.dataset.estadoActual : null;
     try {
         const response = await fetch(`/api/reservas/${idReserva}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ IdEstadoReserva: Number(idEstado) })
+            body: JSON.stringify({ IdEstadoReserva: Number(idEstado), confirmarPagoAdicional })
         });
+        if (response.status === 402) {
+            const data = await response.json().catch(() => ({}));
+            if (selectEl && estadoOriginal) selectEl.value = estadoOriginal;
+            abrirModalPagoAdicional(idReserva, idEstado, data, selectEl);
+            return;
+        }
         if (response.ok) {
             cargarReservas(reservasCurrentPage);
             mostrarNotificacion('Estado de la reserva actualizado.', 'success');
@@ -484,6 +495,53 @@ async function cambiarEstado(idReserva, idEstado, selectEl = null) {
         mostrarNotificacion('Error de conexión al servidor.', 'error');
         if (selectEl && estadoOriginal) selectEl.value = estadoOriginal;
     }
+}
+
+function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
+    const { serviciosPendientes = [], montoAdicional = 0 } = data;
+    const listHtml = serviciosPendientes.map(s =>
+        `<li style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <span>${s.NombreServicio}${s.Cantidad > 1 ? ` x${s.Cantidad}` : ''}</span>
+            <strong>$${Number(s.Subtotal).toLocaleString('es-CO')}</strong>
+        </li>`
+    ).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-pago-adicional';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:14px;padding:1.75rem 2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
+                <span style="font-size:1.4rem;">⚠️</span>
+                <h3 style="margin:0;font-size:1rem;color:#1A2B4A;">Servicios adicionales pendientes de pago</h3>
+            </div>
+            <ul style="list-style:none;padding:0;margin:0 0 0.75rem;font-size:0.85rem;color:#374151;">${listHtml}</ul>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-top:2px solid #f3f4f6;margin-bottom:1rem;">
+                <span style="font-weight:600;color:#374151;">Total adicional</span>
+                <strong style="color:#b45309;font-size:1rem;">$${Number(montoAdicional).toLocaleString('es-CO')}</strong>
+            </div>
+            <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.82rem;color:#374151;cursor:pointer;margin-bottom:1.25rem;">
+                <input type="checkbox" id="chk-pago-adicional" style="margin-top:2px;width:15px;height:15px;cursor:pointer;">
+                <span>Confirmo que el cliente ya canceló los servicios adicionales (<strong>$${Number(montoAdicional).toLocaleString('es-CO')}</strong>) y se puede completar el check-out.</span>
+            </label>
+            <div style="display:flex;gap:0.6rem;justify-content:flex-end;">
+                <button id="btn-pago-cancel" style="padding:0.5rem 1rem;border:1.5px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;color:#374151;">Cancelar</button>
+                <button id="btn-pago-confirm" style="padding:0.5rem 1rem;background:#0D9488;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;opacity:0.4;pointer-events:none;">Completar check-out</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    const chk  = overlay.querySelector('#chk-pago-adicional');
+    const btnOk = overlay.querySelector('#btn-pago-confirm');
+    chk.addEventListener('change', () => {
+        btnOk.style.opacity = chk.checked ? '1' : '0.4';
+        btnOk.style.pointerEvents = chk.checked ? 'auto' : 'none';
+    });
+    overlay.querySelector('#btn-pago-cancel').addEventListener('click', () => overlay.remove());
+    btnOk.addEventListener('click', async () => {
+        overlay.remove();
+        await cambiarEstado(idReserva, idEstado, selectEl, true);
+    });
 }
 
 // Maneja el cambio de estado disparado desde el <select> de la card.
@@ -518,17 +576,37 @@ window.verDetalleReserva = async (id) => {
         const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '—';
         const montoFmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO');
         const alojamiento = r.NombreHabitacion || r.NombreCabana || r.NombrePaquete || '—';
-        const serviciosHtml = (r.servicios && r.servicios.length > 0)
-            ? r.servicios.map(s => {
-                const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
+        const todosServicios = r.servicios || [];
+        const serviciosOriginales = todosServicios.filter(s => !s.AgregadoEnProceso);
+        const serviciosEnProceso  = todosServicios.filter(s =>  s.AgregadoEnProceso);
+        const serviciosPendientes = serviciosEnProceso.filter(s => !s.Pagado);
+        const montoAdicionalPend  = serviciosPendientes.reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
+        const renderTagServicio = (s) => {
+            const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
+            const cant = s.Cantidad || 1;
+            const totalS = s.Subtotal || (precioUnit * cant);
+            const extra = cant > 1 ? ` <span style="opacity:0.7;font-weight:400;">(x${cant})</span>` : '';
+            return `<span class="rd-tag">${s.NombreServicio}
+                <span style="margin-left:0.35rem;font-weight:700;color:#2B6CB0;">$${Number(totalS).toLocaleString('es-CO')}${extra}</span>
+            </span>`;
+        };
+        const serviciosOrigHtml = serviciosOriginales.length > 0
+            ? serviciosOriginales.map(renderTagServicio).join('')
+            : '<span style="color:rgba(26,43,74,0.45); font-size:0.8rem;">Sin servicios adicionales</span>';
+        const serviciosEnProcHtml = serviciosEnProceso.length > 0
+            ? serviciosEnProceso.map(s => {
+                const precioUnit = s.PrecioUnitario || 0;
                 const cant = s.Cantidad || 1;
                 const totalS = s.Subtotal || (precioUnit * cant);
-                const extra = cant > 1 ? ` <span style="opacity:0.7;font-weight:400;">(x${cant} personas)</span>` : '';
-                return `<span class="rd-tag">${s.NombreServicio}
-                    <span style="margin-left:0.35rem;font-weight:700;color:#2B6CB0;">$${Number(totalS).toLocaleString('es-CO')}${extra}</span>
+                const pagadoBadge = s.Pagado
+                    ? `<span style="margin-left:0.4rem;font-size:0.68rem;background:#d1fae5;color:#065f46;border-radius:4px;padding:1px 5px;font-weight:600;">Pagado</span>`
+                    : `<span style="margin-left:0.4rem;font-size:0.68rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:600;">Pendiente</span>`;
+                return `<span class="rd-tag">${s.NombreServicio}${pagadoBadge}
+                    <span style="margin-left:0.35rem;font-weight:700;color:#b45309;">$${Number(totalS).toLocaleString('es-CO')}</span>
                 </span>`;
             }).join('')
-            : '<span style="color:rgba(26,43,74,0.45); font-size:0.8rem;">Sin servicios adicionales</span>';
+            : null;
+        const montoTotalReal = Number(r.MontoTotal || 0) + montoAdicionalPend;
 
         document.getElementById('detalleTitulo').textContent = `Detalle de Reserva #${r.IdReserva}`;
         document.getElementById('detalleContent').style.padding = '0';
@@ -548,10 +626,11 @@ window.verDetalleReserva = async (id) => {
               <div class="rd-hero__id"># ${r.IdReserva}</div>
             </div>
             <div class="rd-hero__center">
-              <span class="rd-hero__label">Total a pagar</span>
+              <span class="rd-hero__label">${montoAdicionalPend > 0 ? 'Total acumulado' : 'Total a pagar'}</span>
               <span class="rd-hero__amount" style="color:#1A2B4A;">
-                <span style="color:#10b981;">$</span>${Number(r.MontoTotal || 0).toLocaleString('es-CO')}
+                <span style="color:#10b981;">$</span>${montoTotalReal.toLocaleString('es-CO')}
               </span>
+              ${montoAdicionalPend > 0 ? `<span style="font-size:0.7rem;color:#6b7280;margin-top:2px;">Original: $${Number(r.MontoTotal||0).toLocaleString('es-CO')} + Adicional: $${montoAdicionalPend.toLocaleString('es-CO')}</span>` : ''}
             </div>
             <div class="rd-hero__right">
               <span class="rd-hero__label">Reservado el</span>
@@ -619,14 +698,34 @@ window.verDetalleReserva = async (id) => {
 
           </div><!-- /rd-grid -->
 
-          <!-- SERVICIOS ADICIONALES -->
+          <!-- AVISO PAGO ADICIONAL PENDIENTE -->
+          ${montoAdicionalPend > 0 ? `
+          <div style="margin:0.75rem 1rem 0;padding:0.75rem 1rem;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.45);border-radius:10px;display:flex;align-items:flex-start;gap:0.6rem;">
+            <i data-lucide="alert-triangle" style="width:18px;flex-shrink:0;color:#b45309;margin-top:1px;"></i>
+            <div style="font-size:0.8rem;color:#92400e;line-height:1.5;">
+              <strong>Servicios adicionales pendientes de pago: $${montoAdicionalPend.toLocaleString('es-CO')}</strong><br>
+              Estos servicios fueron agregados durante la estadía y deben cancelarse antes o durante el check-out para poder completar la reserva.
+            </div>
+          </div>` : ''}
+
+          <!-- SERVICIOS INCLUIDOS EN LA RESERVA -->
           <div class="rd-section">
             <span class="rd-section__label">
               <i data-lucide="sparkles" style="width:13px; color:var(--color-acento);"></i>
-              Servicios adicionales
+              Servicios incluidos en la reserva
             </span>
-            <div class="rd-tags">${serviciosHtml}</div>
+            <div class="rd-tags">${serviciosOrigHtml}</div>
           </div>
+
+          <!-- SERVICIOS AGREGADOS DURANTE LA ESTADÍA -->
+          ${serviciosEnProcHtml ? `
+          <div class="rd-section">
+            <span class="rd-section__label">
+              <i data-lucide="plus-circle" style="width:13px; color:#b45309;"></i>
+              Servicios agregados durante la estadía
+            </span>
+            <div class="rd-tags">${serviciosEnProcHtml}</div>
+          </div>` : ''}
 
         </div>`;
 

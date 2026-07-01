@@ -9,7 +9,7 @@ const { HORAS_EXPIRACION_RESERVA, PORCENTAJE_PERSONA_EXTRA, OCUPACION_ESTANDAR_P
 const getAllReservations = async (page = null, limit = null) => {
   try {
     let sql = `SELECT DISTINCT r.IdReserva, r.FechaReserva, r.FechaInicio, r.FechaFinalizacion,
-                        r.SubTotal, r.Descuento, r.IVA, r.MontoTotal,
+                        r.SubTotal, r.Descuento, r.IVA, r.MontoTotal, r.MontoAdicional,
                         r.MetodoPago, r.IdEstadoReserva,
                         r.UsuarioIdusuario,
                         u.NombreUsuario, u.NumeroDocumento AS NroDocumentoCliente, 
@@ -93,13 +93,18 @@ const getReservationById = async (id) => {
     if (!reservation) return null;
 
     const servicioSql = `SELECT s.IDServicio, s.nombre AS NombreServicio, drs.Cantidad, drs.Precio AS PrecioUnitario,
-                                (drs.Cantidad * drs.Precio) AS Subtotal
+                                (drs.Cantidad * drs.Precio) AS Subtotal,
+                                drs.AgregadoEnProceso, drs.Pagado
                          FROM detallereservaservicio drs
                          JOIN servicios s ON drs.IDServicio = s.IDServicio
                          WHERE drs.IDReserva = ?`;
 
     const [servicioResults] = await db.query(servicioSql, [id]);
-    return { ...reservation, servicios: servicioResults || [] };
+    const servicios = servicioResults || [];
+    const montoAdicionalPendiente = servicios
+      .filter(s => s.AgregadoEnProceso && !s.Pagado)
+      .reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
+    return { ...reservation, servicios, montoAdicionalPendiente };
   } catch (error) {
     throw error;
   }
@@ -229,7 +234,7 @@ const insertCabanaDetail = async (connection, reservaId, IDCabana, precio) => {
   }
 };
 
-const insertServiceDetails = async (connection, reservaId, serviceRows) => {
+const insertServiceDetails = async (connection, reservaId, serviceRows, agregadoEnProceso = 0) => {
   try {
     if (!Array.isArray(serviceRows) || serviceRows.length === 0) return;
     const inserts = serviceRows.map(servicio => [
@@ -237,10 +242,12 @@ const insertServiceDetails = async (connection, reservaId, serviceRows) => {
       servicio.IDServicio,
       Number(servicio.Cantidad || 1),
       Number(servicio.Costo || servicio.Precio || 0),
-      1
+      1,
+      agregadoEnProceso,
+      0
     ]);
     await connection.query(
-      'INSERT INTO detallereservaservicio (IDReserva, IDServicio, Cantidad, Precio, Estado) VALUES ?',
+      'INSERT INTO detallereservaservicio (IDReserva, IDServicio, Cantidad, Precio, Estado, AgregadoEnProceso, Pagado) VALUES ?',
       [inserts]
     );
   } catch (error) {
@@ -569,7 +576,50 @@ const updateReservation = async (id, data) => {
       return { id, ...data };
     }
 
-    // 2. Si es un update completo (desde formulario)
+    // 2a. Lógica especial para reservas "En Proceso": solo se agregan servicios nuevos
+    //     sin tocar los ya existentes ni recalcular el total original
+    if (check[0].IdEstadoReserva === ESTADO_EN_PROCESO) {
+      const nuevosServicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
+
+      // Obtener servicios ya guardados (originales + anteriores en proceso)
+      const [existentes] = await connection.query(
+        'SELECT IDServicio FROM detallereservaservicio WHERE IDReserva = ?', [id]
+      );
+      const idsExistentes = new Set(existentes.map(s => Number(s.IDServicio)));
+
+      // Solo insertar los que son nuevos (que no estén ya en la tabla)
+      const nuevos = nuevosServicioIds.filter(s => {
+        const idS = Number(s?.IDServicio ?? s);
+        return !idsExistentes.has(idS);
+      });
+
+      if (nuevos.length > 0) {
+        const preciosNuevos = await getServicesPrices(nuevos);
+        const filas = nuevos.map(row => {
+          const IDServicio = Number(row?.IDServicio ?? row);
+          return {
+            IDServicio,
+            Cantidad: Number(row?.Cantidad || 1),
+            Costo: preciosNuevos.find(s => Number(s.IDServicio) === IDServicio)?.Costo || 0
+          };
+        });
+        await insertServiceDetails(connection, id, filas, 1); // AgregadoEnProceso = 1
+      }
+
+      // Recalcular MontoAdicional (suma de todos los servicios AgregadoEnProceso=1 y Pagado=0)
+      const [[{ montoAdicional }]] = await connection.query(
+        `SELECT COALESCE(SUM(Cantidad * Precio), 0) AS montoAdicional
+         FROM detallereservaservicio
+         WHERE IDReserva = ? AND AgregadoEnProceso = 1 AND Pagado = 0`,
+        [id]
+      );
+      await connection.query('UPDATE reserva SET MontoAdicional = ? WHERE IdReserva = ?', [montoAdicional, id]);
+
+      await connection.commit();
+      return { id, MontoAdicional: montoAdicional };
+    }
+
+    // 2b. Update completo (reservas que NO están en proceso)
     if (data.FechaInicio && data.FechaFinalizacion) {
       if (new Date(data.FechaFinalizacion) <= new Date(data.FechaInicio)) {
         const err = new Error('La fecha de finalización debe ser al menos el día siguiente al de inicio.');
@@ -586,7 +636,7 @@ const updateReservation = async (id, data) => {
     if (data.MetodoPago) reservaData.MetodoPago = data.MetodoPago;
     if (data.IdEstadoReserva) reservaData.IdEstadoReserva = data.IdEstadoReserva;
     if (Number(data.CantidadHuespedes) > 0) reservaData.CantidadHuespedes = Number(data.CantidadHuespedes);
-    
+
     // Totales siempre se actualizan si es un update completo
     reservaData.SubTotal = totals.subtotal;
     reservaData.Descuento = 0;
@@ -615,7 +665,7 @@ const updateReservation = async (id, data) => {
       if (data.IDPaquete) {
         await insertPackageDetail(connection, id, data.IDPaquete, totals.paquetePrecio);
       }
-      await insertServiceDetails(connection, id, totals.servicios);
+      await insertServiceDetails(connection, id, totals.servicios, 0);
     }
 
     await connection.commit();
@@ -763,10 +813,10 @@ const DIAS_CANCELACION_GRATIS  = 7;
 /** Fracción del MontoTotal que se retiene si se cancela dentro del plazo de penalización (0.40 = 40%) */
 const PORCENTAJE_PENALIZACION  = 0.40;
 
-const updateReservationStatus = async (id, nuevoEstadoId, motivo = null) => {
+const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirmarPagoAdicional = false) => {
   // 1. Obtener estado actual
   const [rows] = await db.query(
-    'SELECT r.IdEstadoReserva, r.UsuarioIdusuario FROM reserva r WHERE r.IdReserva = ?',
+    'SELECT r.IdEstadoReserva, r.UsuarioIdusuario, r.MontoAdicional FROM reserva r WHERE r.IdReserva = ?',
     [id]
   );
   if (!rows.length) return null;
@@ -786,6 +836,39 @@ const updateReservationStatus = async (id, nuevoEstadoId, motivo = null) => {
     const err = new Error(msg);
     err.statusCode = 409;
     throw err;
+  }
+
+  // 2b. Bloquear checkout si hay servicios adicionales sin pagar
+  if (nuevoId === ESTADO_COMPLETADO && estadoActual === ESTADO_EN_PROCESO) {
+    const [[{ pendientes }]] = await db.query(
+      `SELECT COUNT(*) AS pendientes FROM detallereservaservicio
+       WHERE IDReserva = ? AND AgregadoEnProceso = 1 AND Pagado = 0`,
+      [id]
+    );
+    if (pendientes > 0 && !confirmarPagoAdicional) {
+      const [serviciosPend] = await db.query(
+        `SELECT s.nombre AS NombreServicio, drs.Cantidad, drs.Precio AS PrecioUnitario,
+                (drs.Cantidad * drs.Precio) AS Subtotal
+         FROM detallereservaservicio drs
+         JOIN servicios s ON drs.IDServicio = s.IDServicio
+         WHERE drs.IDReserva = ? AND drs.AgregadoEnProceso = 1 AND drs.Pagado = 0`,
+        [id]
+      );
+      const montoTotal = serviciosPend.reduce((s, r) => s + Number(r.Subtotal), 0);
+      const err = new Error('PAGO_ADICIONAL_PENDIENTE');
+      err.statusCode = 402;
+      err.serviciosPendientes = serviciosPend;
+      err.montoAdicional = montoTotal;
+      throw err;
+    }
+    // El admin confirmó que recibió el pago: marcar servicios como pagados y limpiar MontoAdicional
+    if (confirmarPagoAdicional) {
+      await db.query(
+        'UPDATE detallereservaservicio SET Pagado = 1 WHERE IDReserva = ? AND AgregadoEnProceso = 1 AND Pagado = 0',
+        [id]
+      );
+      await db.query('UPDATE reserva SET MontoAdicional = 0 WHERE IdReserva = ?', [id]);
+    }
   }
 
   const timestamp = new Date().toISOString();
