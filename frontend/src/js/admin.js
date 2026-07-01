@@ -543,6 +543,10 @@ async function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
                 </select>
             </div>
 
+            <div id="aviso-transferencia" style="display:none;margin-bottom:1rem;padding:0.65rem 0.9rem;background:rgba(37,99,235,0.07);border:1.5px solid rgba(37,99,235,0.25);border-radius:9px;font-size:0.8rem;color:#1e3a8a;line-height:1.5;">
+                📲 Recuerda indicarle al cliente que debe enviar su comprobante de pago por WhatsApp al <strong>+57 300 123 4567</strong> antes de completar el check-out.
+            </div>
+
             <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.82rem;color:#374151;cursor:pointer;margin-bottom:1.25rem;">
                 <input type="checkbox" id="chk-pago-adicional" style="margin-top:2px;width:15px;height:15px;cursor:pointer;">
                 <span>Confirmo que el cliente canceló los servicios adicionales (<strong>$${Number(montoAdicional).toLocaleString('es-CO')}</strong>) y se puede completar el check-out.</span>
@@ -558,9 +562,12 @@ async function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
     const selMP  = overlay.querySelector('#sel-metodo-pago-adicional');
     const btnOk  = overlay.querySelector('#btn-pago-confirm');
 
+    const avisoTransf = overlay.querySelector('#aviso-transferencia');
     const actualizarBoton = () => {
+        const textoSeleccionado = selMP.selectedOptions[0]?.text || '';
+        avisoTransf.style.display = textoSeleccionado.toLowerCase().includes('transferencia') ? '' : 'none';
         const listo = chk.checked && selMP.value !== '';
-        btnOk.style.opacity      = listo ? '1' : '0.4';
+        btnOk.style.opacity       = listo ? '1' : '0.4';
         btnOk.style.pointerEvents = listo ? 'auto' : 'none';
     };
     chk.addEventListener('change', actualizarBoton);
