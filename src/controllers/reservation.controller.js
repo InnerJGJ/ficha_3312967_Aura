@@ -85,11 +85,11 @@ const deleteReservation = async (req, res, next) => {
 // PATCH /reservations/:id/status
 const updateReservationStatus = async (req, res, next) => {
   try {
-    const { IdEstadoReserva, motivo, confirmarPagoAdicional } = req.body;
+    const { IdEstadoReserva, motivo, confirmarPagoAdicional, metodoPagoAdicional } = req.body;
     if (!IdEstadoReserva) return res.status(400).json({ message: 'IdEstadoReserva es requerido' });
 
     const updated = await reservationService.updateReservationStatus(
-      req.params.id, IdEstadoReserva, motivo, confirmarPagoAdicional === true
+      req.params.id, IdEstadoReserva, motivo, confirmarPagoAdicional === true, metodoPagoAdicional || null
     );
     if (!updated) return res.status(404).json({ message: 'Reserva no encontrada' });
 

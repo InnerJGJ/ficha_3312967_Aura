@@ -469,13 +469,13 @@ function filtrarReservas(estado, btn) {
     });
 }
 
-async function cambiarEstado(idReserva, idEstado, selectEl = null, confirmarPagoAdicional = false) {
+async function cambiarEstado(idReserva, idEstado, selectEl = null, confirmarPagoAdicional = false, metodoPagoAdicional = null) {
     const estadoOriginal = selectEl ? selectEl.dataset.estadoActual : null;
     try {
         const response = await fetch(`/api/reservas/${idReserva}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ IdEstadoReserva: Number(idEstado), confirmarPagoAdicional })
+            body: JSON.stringify({ IdEstadoReserva: Number(idEstado), confirmarPagoAdicional, metodoPagoAdicional })
         });
         if (response.status === 402) {
             const data = await response.json().catch(() => ({}));
@@ -497,8 +497,16 @@ async function cambiarEstado(idReserva, idEstado, selectEl = null, confirmarPago
     }
 }
 
-function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
+async function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
     const { serviciosPendientes = [], montoAdicional = 0 } = data;
+
+    // Cargar métodos de pago del API
+    let metodosPago = [];
+    try {
+        const resp = await fetch('/api/metodopago');
+        if (resp.ok) metodosPago = await resp.json();
+    } catch (_) {}
+
     const listHtml = serviciosPendientes.map(s =>
         `<li style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,0,0,0.06);">
             <span>${s.NombreServicio}${s.Cantidad > 1 ? ` x${s.Cantidad}` : ''}</span>
@@ -506,11 +514,15 @@ function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
         </li>`
     ).join('');
 
+    const opcionesMP = metodosPago.map(m =>
+        `<option value="${m.IdMetodoPago}">${m.NomMetodoPago}</option>`
+    ).join('');
+
     const overlay = document.createElement('div');
     overlay.id = 'modal-pago-adicional';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
     overlay.innerHTML = `
-        <div style="background:#fff;border-radius:14px;padding:1.75rem 2rem;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+        <div style="background:#fff;border-radius:14px;padding:1.75rem 2rem;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
                 <span style="font-size:1.4rem;">⚠️</span>
                 <h3 style="margin:0;font-size:1rem;color:#1A2B4A;">Servicios adicionales pendientes de pago</h3>
@@ -520,9 +532,20 @@ function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
                 <span style="font-weight:600;color:#374151;">Total adicional</span>
                 <strong style="color:#b45309;font-size:1rem;">$${Number(montoAdicional).toLocaleString('es-CO')}</strong>
             </div>
+
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;font-size:0.78rem;font-weight:700;color:rgba(26,43,74,0.6);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem;">
+                    Método de pago del cobro adicional
+                </label>
+                <select id="sel-metodo-pago-adicional" style="width:100%;padding:0.5rem 0.75rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:0.88rem;color:#1A2B4A;background:#fff;cursor:pointer;">
+                    <option value="">— Seleccionar —</option>
+                    ${opcionesMP}
+                </select>
+            </div>
+
             <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.82rem;color:#374151;cursor:pointer;margin-bottom:1.25rem;">
                 <input type="checkbox" id="chk-pago-adicional" style="margin-top:2px;width:15px;height:15px;cursor:pointer;">
-                <span>Confirmo que el cliente ya canceló los servicios adicionales (<strong>$${Number(montoAdicional).toLocaleString('es-CO')}</strong>) y se puede completar el check-out.</span>
+                <span>Confirmo que el cliente canceló los servicios adicionales (<strong>$${Number(montoAdicional).toLocaleString('es-CO')}</strong>) y se puede completar el check-out.</span>
             </label>
             <div style="display:flex;gap:0.6rem;justify-content:flex-end;">
                 <button id="btn-pago-cancel" style="padding:0.5rem 1rem;border:1.5px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer;font-size:0.85rem;color:#374151;">Cancelar</button>
@@ -531,16 +554,23 @@ function abrirModalPagoAdicional(idReserva, idEstado, data, selectEl) {
         </div>`;
     document.body.appendChild(overlay);
 
-    const chk  = overlay.querySelector('#chk-pago-adicional');
-    const btnOk = overlay.querySelector('#btn-pago-confirm');
-    chk.addEventListener('change', () => {
-        btnOk.style.opacity = chk.checked ? '1' : '0.4';
-        btnOk.style.pointerEvents = chk.checked ? 'auto' : 'none';
-    });
+    const chk    = overlay.querySelector('#chk-pago-adicional');
+    const selMP  = overlay.querySelector('#sel-metodo-pago-adicional');
+    const btnOk  = overlay.querySelector('#btn-pago-confirm');
+
+    const actualizarBoton = () => {
+        const listo = chk.checked && selMP.value !== '';
+        btnOk.style.opacity      = listo ? '1' : '0.4';
+        btnOk.style.pointerEvents = listo ? 'auto' : 'none';
+    };
+    chk.addEventListener('change', actualizarBoton);
+    selMP.addEventListener('change', actualizarBoton);
+
     overlay.querySelector('#btn-pago-cancel').addEventListener('click', () => overlay.remove());
     btnOk.addEventListener('click', async () => {
+        const metodoPagoAdicional = selMP.value || null;
         overlay.remove();
-        await cambiarEstado(idReserva, idEstado, selectEl, true);
+        await cambiarEstado(idReserva, idEstado, selectEl, true, metodoPagoAdicional);
     });
 }
 

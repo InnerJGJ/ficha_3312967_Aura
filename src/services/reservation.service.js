@@ -813,7 +813,7 @@ const DIAS_CANCELACION_GRATIS  = 7;
 /** Fracción del MontoTotal que se retiene si se cancela dentro del plazo de penalización (0.40 = 40%) */
 const PORCENTAJE_PENALIZACION  = 0.40;
 
-const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirmarPagoAdicional = false) => {
+const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirmarPagoAdicional = false, metodoPagoAdicional = null) => {
   // 1. Obtener estado actual
   const [rows] = await db.query(
     'SELECT r.IdEstadoReserva, r.UsuarioIdusuario, r.MontoAdicional FROM reserva r WHERE r.IdReserva = ?',
@@ -867,7 +867,11 @@ const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirm
         'UPDATE detallereservaservicio SET Pagado = 1 WHERE IDReserva = ? AND AgregadoEnProceso = 1 AND Pagado = 0',
         [id]
       );
-      await db.query('UPDATE reserva SET MontoAdicional = 0 WHERE IdReserva = ?', [id]);
+      const mpAdicUpdate = metodoPagoAdicional
+        ? 'UPDATE reserva SET MontoAdicional = 0, MetodoPagoAdicional = ? WHERE IdReserva = ?'
+        : 'UPDATE reserva SET MontoAdicional = 0 WHERE IdReserva = ?';
+      const mpAdicParams = metodoPagoAdicional ? [Number(metodoPagoAdicional), id] : [id];
+      await db.query(mpAdicUpdate, mpAdicParams);
     }
   }
 

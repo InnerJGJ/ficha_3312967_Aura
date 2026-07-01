@@ -76,6 +76,8 @@ const runMigrations = async () => {
     await addColumnIfMissing('detallereservaservicio', 'Pagado', 'TINYINT(1) NOT NULL DEFAULT 0');
     // Monto adicional pendiente en reserva (suma de servicios AgregadoEnProceso=1 y Pagado=0)
     await addColumnIfMissing('reserva', 'MontoAdicional', 'DECIMAL(10,2) NOT NULL DEFAULT 0');
+    // Método de pago usado para cancelar servicios adicionales al hacer check-out
+    await addColumnIfMissing('reserva', 'MetodoPagoAdicional', 'INT NULL');
 
     console.log('[migration] all migrations OK');
   } catch (err) {
