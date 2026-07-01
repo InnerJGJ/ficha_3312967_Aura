@@ -17,6 +17,8 @@ let serviciosData = [];
 let allReservationsGlobal = [];
 let fpEditStart = null;
 let fpEditEnd = null;
+let esReservaEnProceso = false;
+let serviciosExistentesIds = new Set();
 
 async function cargarTodasReservas() {
     try {
@@ -245,6 +247,11 @@ async function loadReservations() {
                     <p><strong>Paquete:</strong> ${r.NombrePaquete || 'Sin paquete'}</p>
                     <p><strong>Fechas:</strong> ${r.FechaInicio ? new Date(r.FechaInicio).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'} – ${r.FechaFinalizacion ? new Date(r.FechaFinalizacion).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '-'}</p>
                     <p><strong>Total:</strong> ${formatCurrency(r.MontoTotal || 0)}</p>
+                    ${Number(r.MontoAdicional || 0) > 0 ? `
+                    <div style="margin-top:0.5rem;padding:0.45rem 0.7rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.45);border-radius:8px;font-size:0.78rem;color:#92620a;display:flex;align-items:center;gap:0.4rem;">
+                        <span>⚠️</span>
+                        <span><strong>Servicios adicionales pendientes de pago:</strong> ${formatCurrency(r.MontoAdicional)} — Debes cancelarlos antes del check-out.</span>
+                    </div>` : ''}
                 </div>
                 <div class="reservation-actions">
                     <button class="btn btn-outline-primario" onclick="loadReservationDetails(${r.IdReserva})">Ver detalles</button>
@@ -451,6 +458,9 @@ async function abrirEdicion(id) {
 function populateEditForm(reservation) {
     document.getElementById('editIdReserva').value = reservation.IdReserva;
 
+    esReservaEnProceso = reservation.IdEstadoReserva === 5;
+    serviciosExistentesIds = new Set((reservation.servicios || []).map(s => Number(s.IDServicio)));
+
     let tipoActual = 'habitacion';
     let idAlojActual = null;
     let idPaqueteAdicional = null;
@@ -482,6 +492,32 @@ function populateEditForm(reservation) {
 
     renderServiciosCheckboxes(reservation.servicios || []);
     calcularTotalEdicion();
+
+    // Bloquear campos si la reserva está En Proceso
+    const banner = document.getElementById('editEnProcesoBanner');
+    if (banner) {
+        if (esReservaEnProceso) {
+            const montoAdicPend = Number(reservation.MontoAdicional || 0);
+            banner.style.display = 'flex';
+            banner.querySelector('.ep-monto-aviso').style.display = montoAdicPend > 0 ? '' : 'none';
+            const montoEl = banner.querySelector('.ep-monto-valor');
+            if (montoEl) montoEl.textContent = `$${montoAdicPend.toLocaleString('es-CO')}`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+    ['editFechaInicio', 'editFechaFinalizacion', 'editMetodoPago', 'editAlojamiento', 'editPaqueteAdicional'].forEach(fId => {
+        const el = document.getElementById(fId);
+        if (el) { el.disabled = esReservaEnProceso; el.style.opacity = esReservaEnProceso ? '0.6' : ''; }
+    });
+    ['editTabHab', 'editTabCab', 'editTabPaq'].forEach(tId => {
+        const btn = document.getElementById(tId);
+        if (btn) { btn.disabled = esReservaEnProceso; btn.style.opacity = esReservaEnProceso ? '0.45' : '1'; btn.style.cursor = esReservaEnProceso ? 'not-allowed' : 'pointer'; }
+    });
+    if (esReservaEnProceso) {
+        const pw = document.getElementById('editPaqueteAdicionalWrap');
+        if (pw) pw.style.display = 'none';
+    }
 }
 
 window.editAjustarCantidad = function(id, delta) {
@@ -501,26 +537,33 @@ function renderServiciosCheckboxes(selectedServices = []) {
         const costoS = Number(servicio.Costo || servicio.precio || 0);
         const isChecked = selectedMap.has(servicio.IDServicio);
         const cantidad = selectedMap.get(servicio.IDServicio) || 1;
-        div.style.cssText = 'display:flex;flex-direction:column;gap:0.25rem;padding:0.45rem 0.65rem;border-radius:8px;border:1.5px solid rgba(49,130,206,0.15);background:#f8fbff;';
+        const bloqueado = esReservaEnProceso && serviciosExistentesIds.has(Number(servicio.IDServicio));
+
+        div.style.cssText = `display:flex;flex-direction:column;gap:0.25rem;padding:0.45rem 0.65rem;border-radius:8px;border:1.5px solid rgba(49,130,206,0.15);background:${bloqueado ? '#eef3f8' : '#f8fbff'};${bloqueado ? 'opacity:0.72;' : ''}`;
         div.innerHTML = `
-            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.79rem;color:#1A2B4A;margin:0;">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.79rem;color:#1A2B4A;margin:0;">
                 <input type="checkbox" class="edit-servicio-check" value="${servicio.IDServicio}"
                        data-costo="${costoS}" ${isChecked ? 'checked' : ''}
+                       ${bloqueado ? 'disabled' : ''}
                        style="width:15px;height:15px;accent-color:#2B6CB0;flex-shrink:0;"
                        onchange="calcularTotalEdicion()">
                 <span style="flex:1;font-weight:600;">${servicio.NombreServicio || servicio.nombre || 'Servicio'}</span>
+                ${bloqueado ? '<span style="font-size:0.65rem;background:rgba(43,108,176,0.12);color:#2B6CB0;border-radius:4px;padding:1px 5px;white-space:nowrap;flex-shrink:0;">Ya incluido</span>' : ''}
                 <span style="color:#2B6CB0;font-weight:700;white-space:nowrap;font-size:0.75rem;">$${costoS.toLocaleString('es-CO')}/p</span>
             </label>
             <div style="display:flex;align-items:center;gap:0.35rem;padding-left:1.4rem;">
                 <span style="font-size:0.68rem;color:rgba(26,43,74,0.5);">Cant:</span>
-                <button type="button" onclick="editAjustarCantidad('${servicio.IDServicio}',-1)"
-                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:pointer;font-size:0.85rem;font-weight:700;line-height:1;padding:0;">−</button>
+                <button type="button" onclick="${bloqueado ? '' : `editAjustarCantidad('${servicio.IDServicio}',-1)`}"
+                        ${bloqueado ? 'disabled' : ''}
+                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.85rem;font-weight:700;line-height:1;padding:0;">−</button>
                 <input type="number" class="edit-srv-qty" data-servicio-id="${servicio.IDServicio}"
                        min="1" max="20" value="${cantidad}"
+                       ${bloqueado ? 'disabled' : ''}
                        style="width:36px;text-align:center;border:1px solid rgba(43,108,176,0.25);border-radius:4px;font-size:0.78rem;padding:2px 0;color:#1A2B4A;"
                        oninput="calcularTotalEdicion()">
-                <button type="button" onclick="editAjustarCantidad('${servicio.IDServicio}',1)"
-                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:pointer;font-size:0.85rem;font-weight:700;line-height:1;padding:0;">+</button>
+                <button type="button" onclick="${bloqueado ? '' : `editAjustarCantidad('${servicio.IDServicio}',1)`}"
+                        ${bloqueado ? 'disabled' : ''}
+                        style="width:20px;height:20px;border-radius:50%;border:1px solid rgba(43,108,176,0.3);background:#fff;color:#2B6CB0;cursor:${bloqueado ? 'not-allowed' : 'pointer'};font-size:0.85rem;font-weight:700;line-height:1;padding:0;">+</button>
                 <span class="edit-srv-total" data-servicio-id="${servicio.IDServicio}"
                       style="font-size:0.72rem;color:#2B6CB0;font-weight:700;margin-left:0.1rem;"></span>
             </div>
@@ -563,7 +606,35 @@ function calcularTotalEdicion() {
 }
 
 async function guardarEdicion() {
-    const id      = document.getElementById('editIdReserva').value;
+    const id = document.getElementById('editIdReserva').value;
+
+    // Reserva En Proceso: solo se pueden agregar servicios adicionales
+    if (esReservaEnProceso) {
+        const serviciosAdicionales = Array.from(document.querySelectorAll('.edit-servicio-check:checked'))
+            .map(el => ({
+                IDServicio: parseInt(el.value),
+                Cantidad: parseInt(document.querySelector(`.edit-srv-qty[data-servicio-id="${el.value}"]`)?.value || 1)
+            }));
+        try {
+            const response = await fetch(`/api/reservas/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ serviciosAdicionales }),
+            });
+            if (response.ok) {
+                cerrarModal();
+                await loadReservations();
+                await loadReservationDetails(id);
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Error al actualizar la reserva');
+            }
+        } catch (e) {
+            alert('Error de conexión');
+        }
+        return;
+    }
+
     const tipo    = document.getElementById('editTipoAloj').value;
     const idAloj  = document.getElementById('editAlojamiento').value;
     const serviciosAdicionales = Array.from(document.querySelectorAll('.edit-servicio-check:checked'))
