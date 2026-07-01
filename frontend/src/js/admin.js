@@ -1001,18 +1001,43 @@ window.editarReserva = async (id) => {
 };
 
 window.guardarReserva = async (id) => {
-    const fechaInicio = document.getElementById('er_fechaInicio')?.value;
-    const fechaFin    = document.getElementById('er_fechaFin')?.value;
-    const idEstado    = document.getElementById('er_estado')?.value;
-    const idMetodo    = document.getElementById('er_metodoPago')?.value;
-    const tipoAloj    = document.getElementById('er_tipoAloj')?.value;
-    const idAloj      = document.getElementById('er_alojamiento')?.value;
+    const idEstado = document.getElementById('er_estado')?.value;
+    const esEnProceso = Number(idEstado) === 5;
 
     const serviciosAdicionales = [...document.querySelectorAll('#er_servicios_grid .er-srv-check:checked')]
         .map(cb => ({
             IDServicio: Number(cb.value),
             Cantidad: parseInt(document.querySelector(`.er-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1)
         }));
+
+    // En Proceso: solo se pueden modificar servicios adicionales
+    if (esEnProceso) {
+        const payload = { serviciosAdicionales };
+        try {
+            const res = await fetch(`/api/reservas/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                cerrarModal();
+                cargarReservas(reservasCurrentPage);
+                mostrarNotificacion('✅ Servicios adicionales actualizados.', 'success');
+            } else {
+                const err = await res.json().catch(() => ({}));
+                mostrarNotificacion(`Error: ${err.message || 'No se pudo actualizar.'}`, 'error');
+            }
+        } catch(e) {
+            mostrarNotificacion('Error de conexión al servidor.', 'error');
+        }
+        return;
+    }
+
+    const fechaInicio = document.getElementById('er_fechaInicio')?.value;
+    const fechaFin    = document.getElementById('er_fechaFin')?.value;
+    const idMetodo    = document.getElementById('er_metodoPago')?.value;
+    const tipoAloj    = document.getElementById('er_tipoAloj')?.value;
+    const idAloj      = document.getElementById('er_alojamiento')?.value;
 
     if (!fechaInicio || !fechaFin) {
         mostrarNotificacion('Las fechas de check-in y check-out son obligatorias.', 'warning');
