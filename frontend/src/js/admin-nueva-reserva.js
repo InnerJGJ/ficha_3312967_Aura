@@ -544,6 +544,18 @@ function isRangeOverlapping(start,end,range) { return !(end<range.start||start>r
 // Destruye y recrea flatpickr conservando las fechas ya seleccionadas y aplicando
 // las nuevas fechas bloqueadas. Usar destroy+reinit en vez de set() porque set()
 // provoca un redraw que vacía visualmente el input aunque selectedDates siga intacto.
+function _ajustarCalendario(instance) {
+    requestAnimationFrame(() => {
+        const cal = instance.calendarContainer;
+        if (!cal) return;
+        const rect = cal.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 4) {
+            const shift = rect.right - window.innerWidth + 4;
+            cal.style.left = `${Math.max(4, parseFloat(cal.style.left || 0) - shift)}px`;
+        }
+    });
+}
+
 function reinitFlatpickrs(disabled, savedStart, savedEnd) {
     const today = getTodayInputValue();
     if (fpStart) { fpStart.destroy(); fpStart = null; }
@@ -552,6 +564,7 @@ function reinitFlatpickrs(disabled, savedStart, savedEnd) {
     fpStart = flatpickr('#FechaInicio', {
         minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
         defaultDate: savedStart || today, locale: 'es', appendTo: document.body,
+        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange(selectedDates) {
             if (selectedDates.length > 0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -563,6 +576,7 @@ function reinitFlatpickrs(disabled, savedStart, savedEnd) {
     fpEnd = flatpickr('#FechaFinalizacion', {
         minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
         defaultDate: savedEnd || getTomorrowInputValue(), locale: 'es', appendTo: document.body,
+        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange() { actualizarContadorNoches(); calcularTotal(); validateDateSelection(); }
     });
 }

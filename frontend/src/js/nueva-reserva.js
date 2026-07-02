@@ -632,6 +632,18 @@ function getDisabledDatesForRoom(roomId) {
     return disabledDates;
 }
 
+function _ajustarCalendario(instance) {
+    requestAnimationFrame(() => {
+        const cal = instance.calendarContainer;
+        if (!cal) return;
+        const rect = cal.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 4) {
+            const shift = rect.right - window.innerWidth + 4;
+            cal.style.left = `${Math.max(4, parseFloat(cal.style.left || 0) - shift)}px`;
+        }
+    });
+}
+
 function initFlatpickrs(disabledDates, startDefault, endDefault) {
     const today = getTodayInputValue();
     if (fpStart) { fpStart.destroy(); fpStart = null; }
@@ -644,6 +656,7 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         defaultDate: startDefault || today,
         locale: 'es',
         appendTo: document.body,
+        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange: function (selectedDates) {
             if (selectedDates.length > 0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -663,6 +676,7 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         defaultDate: endDefault || getTomorrowInputValue(),
         locale: 'es',
         appendTo: document.body,
+        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange: function () {
             actualizarContadorNoches();
             calcularTotal();
