@@ -632,16 +632,18 @@ function getDisabledDatesForRoom(roomId) {
     return disabledDates;
 }
 
-function _ajustarCalendario(instance) {
-    requestAnimationFrame(() => {
-        const cal = instance.calendarContainer;
-        if (!cal) return;
+function _vigilarDesbordeDerecho(fp) {
+    const cal = fp.calendarContainer;
+    let corrigiendo = false;
+    new MutationObserver(() => {
+        if (corrigiendo || !cal.classList.contains('open')) return;
         const rect = cal.getBoundingClientRect();
         if (rect.right > window.innerWidth - 4) {
-            const shift = rect.right - window.innerWidth + 4;
-            cal.style.left = `${Math.max(4, parseFloat(cal.style.left || 0) - shift)}px`;
+            corrigiendo = true;
+            cal.style.left = `${Math.max(4, parseFloat(cal.style.left || 0) - (rect.right - window.innerWidth + 4))}px`;
+            corrigiendo = false;
         }
-    });
+    }).observe(cal, { attributes: true, attributeFilter: ['style', 'class'] });
 }
 
 function initFlatpickrs(disabledDates, startDefault, endDefault) {
@@ -656,7 +658,6 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         defaultDate: startDefault || today,
         locale: 'es',
         appendTo: document.body,
-        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange: function (selectedDates) {
             if (selectedDates.length > 0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -668,6 +669,7 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
             }
         }
     });
+    _vigilarDesbordeDerecho(fpStart);
 
     fpEnd = flatpickr('#FechaFinalizacion', {
         minDate: today,
@@ -676,13 +678,13 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
         defaultDate: endDefault || getTomorrowInputValue(),
         locale: 'es',
         appendTo: document.body,
-        onOpen: (_, __, inst) => _ajustarCalendario(inst),
         onChange: function () {
             actualizarContadorNoches();
             calcularTotal();
             validateDateSelection();
         }
     });
+    _vigilarDesbordeDerecho(fpEnd);
 }
 
 async function updateDatePickerRestrictions() {
