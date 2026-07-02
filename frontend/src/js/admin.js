@@ -860,7 +860,11 @@ window.editarReserva = async (id) => {
             tipoActual = 'paquete';    idAlojActual = r.IDPaquete;
         }
 
-        const serviciosActivos = new Map((r.servicios || []).map(s => [Number(s.IDServicio), Number(s.Cantidad || 1)]));
+        const serviciosActivos = new Map();
+        (r.servicios || []).forEach(s => {
+            const id = Number(s.IDServicio);
+            serviciosActivos.set(id, (serviciosActivos.get(id) || 0) + Number(s.Cantidad || 1));
+        });
 
         // Genera <option> para el tipo de alojamiento pedido
         const renderOpciones = (tipo, selId) => {

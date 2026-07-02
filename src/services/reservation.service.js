@@ -579,34 +579,46 @@ const updateReservation = async (id, data) => {
       return { id, ...data };
     }
 
-    // 2a. Lógica especial para reservas "En Proceso": solo se agregan servicios nuevos
-    //     sin tocar los ya existentes ni recalcular el total original
+    // 2a. Lógica especial para reservas "En Proceso": los servicios originales (AgregadoEnProceso=0)
+    //     son intocables; los extra (AgregadoEnProceso=1) se recalculan con el delta de cantidades.
     if (check[0].IdEstadoReserva === ESTADO_EN_PROCESO) {
-      const nuevosServicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
+      const serviciosEnviados = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
 
-      // Obtener servicios ya guardados (originales + anteriores en proceso)
+      // Leer cantidades base (AgregadoEnProceso=0) — estos son los servicios originales confirmados
       const [existentes] = await connection.query(
-        'SELECT IDServicio FROM detallereservaservicio WHERE IDReserva = ?', [id]
+        'SELECT IDServicio, Cantidad, AgregadoEnProceso FROM detallereservaservicio WHERE IDReserva = ?', [id]
       );
-      const idsExistentes = new Set(existentes.map(s => Number(s.IDServicio)));
-
-      // Solo insertar los que son nuevos (que no estén ya en la tabla)
-      const nuevos = nuevosServicioIds.filter(s => {
-        const idS = Number(s?.IDServicio ?? s);
-        return !idsExistentes.has(idS);
+      const cantBase = new Map();
+      existentes.forEach(s => {
+        if (Number(s.AgregadoEnProceso) === 0) {
+          cantBase.set(Number(s.IDServicio), Number(s.Cantidad));
+        }
       });
 
-      if (nuevos.length > 0) {
-        const preciosNuevos = await getServicesPrices(nuevos);
-        const filas = nuevos.map(row => {
-          const IDServicio = Number(row?.IDServicio ?? row);
-          return {
-            IDServicio,
-            Cantidad: Number(row?.Cantidad || 1),
-            Costo: preciosNuevos.find(s => Number(s.IDServicio) === IDServicio)?.Costo || 0
-          };
-        });
-        await insertServiceDetails(connection, id, filas, 1); // AgregadoEnProceso = 1
+      // Borrar solo los servicios "en proceso" para recalcularlos desde cero
+      await connection.query(
+        'DELETE FROM detallereservaservicio WHERE IDReserva = ? AND AgregadoEnProceso = 1', [id]
+      );
+
+      // Para cada servicio enviado, calcular el delta respecto a la cantidad base original
+      // delta > 0 → hay unidades nuevas que cobrar como cargo en proceso
+      const filasDelta = [];
+      for (const s of serviciosEnviados) {
+        const idS = Number(s?.IDServicio ?? s);
+        const cantSubmitted = Number(s?.Cantidad || 1);
+        const base = cantBase.get(idS) || 0;
+        const delta = cantSubmitted - base;
+        if (delta > 0) filasDelta.push({ IDServicio: idS, Cantidad: delta });
+      }
+
+      if (filasDelta.length > 0) {
+        const precios = await getServicesPrices(filasDelta);
+        const filas = filasDelta.map(row => ({
+          IDServicio: row.IDServicio,
+          Cantidad: row.Cantidad,
+          Costo: precios.find(s => Number(s.IDServicio) === row.IDServicio)?.Costo || 0
+        }));
+        await insertServiceDetails(connection, id, filas, 1);
       }
 
       // Recalcular MontoAdicional (suma de todos los servicios AgregadoEnProceso=1 y Pagado=0)
