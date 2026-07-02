@@ -460,7 +460,8 @@ async function abrirEdicion(id) {
 function populateEditForm(reservation) {
     document.getElementById('editIdReserva').value = reservation.IdReserva;
 
-    esReservaEnProceso = reservation.IdEstadoReserva === 5;
+    // Estados 2 (Confirmada) y 5 (En Proceso) bloquean campos principales
+    esReservaEnProceso = reservation.IdEstadoReserva === 5 || reservation.IdEstadoReserva === 2;
     serviciosExistentesIds = new Set((reservation.servicios || []).map(s => Number(s.IDServicio)));
 
     let tipoActual = 'habitacion';
@@ -498,12 +499,19 @@ function populateEditForm(reservation) {
     renderServiciosCheckboxes(reservation.servicios || []);
     calcularTotalEdicion();
 
-    // Bloquear campos si la reserva está En Proceso
+    // Bloquear campos si la reserva está Confirmada o En Proceso
     const banner = document.getElementById('editEnProcesoBanner');
     if (banner) {
         if (esReservaEnProceso) {
-            const montoAdicPend = Number(reservation.MontoAdicional || 0);
             banner.style.display = 'flex';
+            const titulo = banner.querySelector('strong');
+            if (titulo) {
+                titulo.textContent = reservation.IdEstadoReserva === 2
+                    ? 'Reserva Confirmada — edición limitada.'
+                    : 'Reserva en estadía activa (En Proceso).';
+            }
+            // El aviso de monto pendiente solo aplica a En Proceso
+            const montoAdicPend = reservation.IdEstadoReserva === 5 ? Number(reservation.MontoAdicional || 0) : 0;
             banner.querySelector('.ep-monto-aviso').style.display = montoAdicPend > 0 ? '' : 'none';
             const montoEl = banner.querySelector('.ep-monto-valor');
             if (montoEl) montoEl.textContent = `$${montoAdicPend.toLocaleString('es-CO')}`;
@@ -524,7 +532,7 @@ function populateEditForm(reservation) {
         if (pw) pw.style.display = 'none';
     }
     const montoLabel = document.getElementById('editMontoTotalLabel');
-    if (montoLabel) montoLabel.textContent = esReservaEnProceso ? 'Cargo adicional (nuevos servicios)' : 'Monto Total Estimado';
+    if (montoLabel) montoLabel.textContent = reservation.IdEstadoReserva === 5 ? 'Cargo adicional (nuevos servicios)' : 'Monto Total Estimado';
 }
 
 window.editAjustarCantidad = function(id, delta) {

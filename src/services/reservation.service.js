@@ -562,12 +562,12 @@ const updateReservation = async (id, data) => {
     // 1. Si SOLO viene IdEstadoReserva, hacemos un update rápido y salimos
     const keys = Object.keys(data);
 
-    // Bloquear cambios de fechas/alojamiento cuando el huésped ya está En Proceso
-    if (check[0].IdEstadoReserva === ESTADO_EN_PROCESO) {
+    // Bloquear cambios de fechas/alojamiento cuando la reserva está Confirmada o En Proceso
+    if (check[0].IdEstadoReserva === ESTADO_EN_PROCESO || check[0].IdEstadoReserva === ESTADO_CONFIRMADO) {
       const camposBloqueados = ['FechaInicio', 'FechaFinalizacion', 'IDHabitacion', 'IDCabana', 'IDPaquete'];
       if (camposBloqueados.some(k => data[k] !== undefined)) {
         await connection.rollback();
-        const err = new Error('No se pueden modificar las fechas ni el alojamiento de una reserva que ya está En Proceso. Solo es posible ajustar los servicios adicionales.');
+        const err = new Error('No se pueden modificar las fechas ni el alojamiento de una reserva Confirmada o En Proceso. Solo es posible ajustar los servicios adicionales.');
         err.statusCode = 422;
         throw err;
       }
@@ -622,7 +622,58 @@ const updateReservation = async (id, data) => {
       return { id, MontoAdicional: montoAdicional };
     }
 
-    // 2b. Update completo (reservas que NO están en proceso)
+    // 2b. Lógica especial para reservas Confirmadas: reemplaza servicios (AgregadoEnProceso=0)
+    //     recalculando totales con el alojamiento ya guardado. Fechas y alojamiento intactos.
+    if (check[0].IdEstadoReserva === ESTADO_CONFIRMADO) {
+      const servicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
+
+      // Leer alojamiento y fechas actuales de la reserva para recalcular totales
+      const [[alojActual]] = await connection.query(`
+        SELECT r.FechaInicio, r.FechaFinalizacion, r.CantidadHuespedes,
+               drp.IDPaquete, drh.IDHabitacion, drc.IDCabana
+        FROM reserva r
+        LEFT JOIN detallereservapaquetes   drp ON drp.IDReserva = r.IdReserva
+        LEFT JOIN detallereservahabitacion drh ON drh.IDReserva = r.IdReserva
+        LEFT JOIN detallereservacabana     drc ON drc.IDReserva = r.IdReserva
+        WHERE r.IdReserva = ?`, [id]);
+
+      const totals = await calculateTotals(
+        alojActual?.IDPaquete, alojActual?.IDHabitacion, alojActual?.IDCabana,
+        servicioIds,
+        alojActual?.FechaInicio, alojActual?.FechaFinalizacion,
+        alojActual?.CantidadHuespedes
+      );
+
+      const reservaData = {
+        SubTotal:   totals.subtotal,
+        IVA:        totals.iva,
+        MontoTotal: totals.total,
+        Descuento:  0,
+      };
+      if (data.MetodoPago)      reservaData.MetodoPago      = data.MetodoPago;
+      if (data.IdEstadoReserva) reservaData.IdEstadoReserva = data.IdEstadoReserva;
+
+      await connection.query('UPDATE reserva SET ? WHERE IdReserva = ?', [reservaData, id]);
+
+      // Reemplaza solo los servicios originales (AgregadoEnProceso=0); mantiene los de En Proceso
+      await connection.query(
+        'DELETE FROM detallereservaservicio WHERE IDReserva = ? AND AgregadoEnProceso = 0', [id]
+      );
+      if (servicioIds.length > 0) {
+        const precios = await getServicesPrices(servicioIds);
+        const filas = servicioIds.map(row => ({
+          IDServicio: Number(row?.IDServicio ?? row),
+          Cantidad:   Number(row?.Cantidad || 1),
+          Costo:      precios.find(s => Number(s.IDServicio) === Number(row?.IDServicio ?? row))?.Costo || 0,
+        }));
+        await insertServiceDetails(connection, id, filas, 0);
+      }
+
+      await connection.commit();
+      return { id, ...reservaData };
+    }
+
+    // 2c. Update completo (solo reservas Pendientes)
     if (data.FechaInicio && data.FechaFinalizacion) {
       if (new Date(data.FechaFinalizacion) <= new Date(data.FechaInicio)) {
         const err = new Error('La fecha de finalización debe ser al menos el día siguiente al de inicio.');

@@ -842,7 +842,8 @@ window.editarReserva = async (id) => {
         const servicios    = (await resSrv.json()).filter(s => s.Estado !== 0);
 
         const fmt = f => f ? new Date(f).toISOString().split('T')[0] : '';
-        const esEnProceso = r.IdEstadoReserva === 5;
+        // Estados 2 (Confirmada) y 5 (En Proceso) tienen el mismo bloqueo de campos principales
+        const esEnProceso = r.IdEstadoReserva === 5 || r.IdEstadoReserva === 2;
 
         // FIX: Usar IDHabitacionDirecta (NULL si la reserva es solo paquete) para
         // evitar que la habitación interna del paquete se interprete como habitación directa.
@@ -895,11 +896,18 @@ window.editarReserva = async (id) => {
         modalContent.style.maxHeight = '72vh';
         modalContent.style.overflowY = 'auto';
 
+        const _bannerBloq = esEnProceso
+            ? (r.IdEstadoReserva === 5
+                ? '<div style="grid-column:1/-1;display:flex;align-items:flex-start;gap:0.6rem;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.35);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.79rem;color:#0D9488;margin-bottom:0.1rem;">🔒 <span><strong>Reserva En Proceso</strong> — El huésped ya realizó check-in. Las fechas y el alojamiento están bloqueados. Solo puedes modificar los servicios adicionales.</span></div>'
+                : '<div style="grid-column:1/-1;display:flex;align-items:flex-start;gap:0.6rem;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.79rem;color:#92620a;margin-bottom:0.1rem;">🔒 <span><strong>Reserva Confirmada — edición limitada</strong> — Las fechas y el alojamiento están bloqueados. Solo puedes modificar los servicios adicionales, el estado y el método de pago.</span></div>')
+            : '';
+
         modalContent.innerHTML = `
             <form id="formEditarReserva" style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;">
                 <input type="hidden" id="er_tipoAloj" value="${tipoActual}">
+                <input type="hidden" id="er_estadoOriginal" value="${r.IdEstadoReserva}">
 
-                ${esEnProceso ? '<div style="grid-column:1/-1;display:flex;align-items:flex-start;gap:0.6rem;background:rgba(13,148,136,0.1);border:1px solid rgba(13,148,136,0.35);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.79rem;color:#0D9488;margin-bottom:0.1rem;">🔒 <span><strong>Reserva En Proceso</strong> — El huésped ya realizó check-in. Las fechas y el alojamiento están bloqueados. Solo puedes modificar los servicios adicionales.</span></div>' : ''}
+                ${_bannerBloq}
 
                 <!-- Fechas -->
                 <div class="form-group">
@@ -989,7 +997,8 @@ window.editarReserva = async (id) => {
         // Mostrar total guardado en BD; si el usuario cambia algo, erRecalcular() lo actualizará
         const _montoEl = document.getElementById('er_monto');
         if (_montoEl) _montoEl.value = `$${Number(r.MontoTotal || 0).toLocaleString('es-CO')}`;
-        if (!esEnProceso) erRecalcular();
+        // Para Confirmada también recalcula (servicios cambian el total; fechas/alojam. siguen fijos)
+        if (!esEnProceso || r.IdEstadoReserva === 2) erRecalcular();
 
         // Tabs de tipo de alojamiento
         document.querySelectorAll('.er-tipo-btn').forEach(btn => {
@@ -1030,7 +1039,9 @@ window.editarReserva = async (id) => {
 
 window.guardarReserva = async (id) => {
     const idEstado = document.getElementById('er_estado')?.value;
-    const esEnProceso = Number(idEstado) === 5;
+    const estadoOriginalBD = Number(document.getElementById('er_estadoOriginal')?.value);
+    // Estados 2 (Confirmada) y 5 (En Proceso) bloquean campos principales
+    const esBloqueada = estadoOriginalBD === 5 || estadoOriginalBD === 2;
 
     const serviciosAdicionales = [...document.querySelectorAll('#er_servicios_grid .er-srv-check:checked')]
         .map(cb => ({
@@ -1038,9 +1049,14 @@ window.guardarReserva = async (id) => {
             Cantidad: parseInt(document.querySelector(`.er-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1)
         }));
 
-    // En Proceso: solo se pueden modificar servicios adicionales
-    if (esEnProceso) {
+    // Confirmada / En Proceso: solo servicios (+ estado y método de pago para Confirmada)
+    if (esBloqueada) {
         const payload = { serviciosAdicionales };
+        if (estadoOriginalBD === 2) {
+            payload.IdEstadoReserva = Number(idEstado);
+            const idMetodo = Number(document.getElementById('er_metodoPago')?.value);
+            if (idMetodo) payload.MetodoPago = idMetodo;
+        }
         try {
             const res = await fetch(`/api/reservas/${id}`, {
                 method: 'PUT',
@@ -1050,7 +1066,7 @@ window.guardarReserva = async (id) => {
             if (res.ok) {
                 cerrarModal();
                 cargarReservas(reservasCurrentPage);
-                mostrarNotificacion('✅ Servicios adicionales actualizados.', 'success');
+                mostrarNotificacion('✅ Reserva actualizada.', 'success');
             } else {
                 const err = await res.json().catch(() => ({}));
                 mostrarNotificacion(`Error: ${err.message || 'No se pudo actualizar.'}`, 'error');
