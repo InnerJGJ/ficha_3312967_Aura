@@ -733,27 +733,47 @@ function initFlatpickrs(disabledDates, startDefault, endDefault) {
 }
 
 async function updateDatePickerRestrictions() {
-    // Leer fechas del DOM ANTES del await para no perderlas
-    const savedStart = document.getElementById('FechaInicio')?.value || getTodayInputValue();
-    const savedEnd   = document.getElementById('FechaFinalizacion')?.value || getTomorrowInputValue();
+    // Leer fechas del DOM ANTES del await (el redraw de flatpickr las borraría)
+    // Sin fallback: distinguimos "vacío" de "hoy" para no restaurar fechas fantasma
+    const savedStart = document.getElementById('FechaInicio')?.value || '';
+    const savedEnd   = document.getElementById('FechaFinalizacion')?.value || '';
 
     const roomId = getSelectedRoomId();
     const accommodationType = getSelectedAccommodationType();
 
-    // Cargar reservas confirmadas solo para el alojamiento seleccionado
     const confirmedReservations = roomId
         ? await cargarReservasConfirmadasPorAlojamiento(roomId, accommodationType)
         : [];
 
-    // Actualizar la variable global para uso en validaciones
     allReservations = confirmedReservations;
 
-    const disabledDates = getDisabledDatesForRoom(roomId);
+    const disabledDates  = getDisabledDatesForRoom(roomId);
+    const blockedRanges  = getRoomBlockedRanges(roomId);
 
-    // Reinicializar flatpickr con las fechas guardadas y las nuevas restricciones.
-    // Usar reinit en vez de set() porque set() provoca un redraw que vacía
-    // visualmente el input aunque selectedDates internamente siga intacto.
-    initFlatpickrs(disabledDates, savedStart, savedEnd);
+    // Reinicializar flatpickr — defaultDate bypassa el disable check de flatpickr,
+    // por eso comprobamos DESPUÉS si hay conflicto y limpiamos manualmente.
+    initFlatpickrs(
+        disabledDates,
+        savedStart || getTodayInputValue(),
+        savedEnd   || getTomorrowInputValue()
+    );
+
+    // Si las fechas ya seleccionadas se solapan con rangos bloqueados → limpiarlas
+    const rangeConflicts = savedStart && savedEnd &&
+        blockedRanges.some(r => isRangeOverlapping(savedStart, savedEnd, r));
+
+    if (rangeConflicts) {
+        if (fpStart) fpStart.clear();
+        if (fpEnd)   fpEnd.clear();
+        const msgEl = document.getElementById('dateAvailabilityMessage');
+        if (msgEl) {
+            msgEl.innerHTML = '⚠️ <strong style="color:#dc2626;">Las fechas seleccionadas están ocupadas para este alojamiento.</strong> Los días bloqueados (en rojo) no están disponibles — por favor elige otras fechas.';
+            msgEl.style.color = '';
+        }
+    } else {
+        updateAvailabilityMessage();
+        validateDateSelection();
+    }
 }
 
 function getSelectedRoomId() {
@@ -811,7 +831,11 @@ function updateAvailabilityMessage() {
         return;
     }
 
-    messageEl.innerHTML = '<strong style="color: #16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.';
+    if (blockedRanges.length > 0) {
+        messageEl.innerHTML = '⚠ <strong style="color:#f59e0b;">Fechas limitadas:</strong> Este alojamiento tiene reservas en algunas fechas. Los días marcados en rojo no están disponibles.';
+    } else {
+        messageEl.innerHTML = '<strong style="color:#16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente libre para las fechas que elijas.';
+    }
     messageEl.style.color = 'rgba(26, 43, 74, 0.8)';
 }
 

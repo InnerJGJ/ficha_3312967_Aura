@@ -167,6 +167,7 @@
   box-shadow: inset 0 0 0 1px rgba(49,130,206,0.25);
 }
 
+/* Días fuera de rango (prevMonthDay/nextMonthDay) y días deshabilitados por minDate/maxDate */
 .flatpickr-day.disabled,
 .flatpickr-day.prevMonthDay,
 .flatpickr-day.nextMonthDay {
@@ -180,6 +181,22 @@
   background: rgba(255,107,107,0.08) !important;
   border: 1px solid rgba(255,107,107,0.25);
   position: relative;
+}
+
+/* Días bloqueados por el array disable[] — clase que flatpickr añade programáticamente */
+.flatpickr-day.flatpickr-disabled {
+  cursor: not-allowed !important;
+  color: rgba(180,40,40,0.6) !important;
+  background: rgba(255,107,107,0.1) !important;
+  border: 1px solid rgba(255,107,107,0.35) !important;
+  opacity: 0.6;
+  text-decoration: line-through;
+  pointer-events: all !important; /* mantener para que el cursor cambie al pasar */
+}
+
+.flatpickr-day.flatpickr-disabled:hover {
+  background: rgba(255,107,107,0.18) !important;
+  cursor: not-allowed !important;
 }
 
 .flatpickr-day.startRange {
