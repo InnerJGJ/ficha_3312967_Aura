@@ -551,7 +551,7 @@ function reinitFlatpickrs(disabled, savedStart, savedEnd) {
 
     fpStart = flatpickr('#FechaInicio', {
         minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
-        defaultDate: savedStart || today, locale: 'es',
+        defaultDate: savedStart || today, locale: 'es', appendTo: document.body,
         onChange(selectedDates) {
             if (selectedDates.length > 0) {
                 const nextDay = new Date(selectedDates[0].getTime() + 86400000);
@@ -562,7 +562,7 @@ function reinitFlatpickrs(disabled, savedStart, savedEnd) {
     });
     fpEnd = flatpickr('#FechaFinalizacion', {
         minDate: today, disable: disabled || [], dateFormat: 'Y-m-d',
-        defaultDate: savedEnd || getTomorrowInputValue(), locale: 'es',
+        defaultDate: savedEnd || getTomorrowInputValue(), locale: 'es', appendTo: document.body,
         onChange() { actualizarContadorNoches(); calcularTotal(); validateDateSelection(); }
     });
 }
