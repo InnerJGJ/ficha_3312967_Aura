@@ -551,7 +551,7 @@ function populateEditForm(reservation) {
             banner.style.display = 'none';
         }
     }
-    ['editMetodoPago', 'editAlojamiento'].forEach(fId => {
+    ['editFechaInicio', 'editFechaFinalizacion', 'editMetodoPago', 'editAlojamiento'].forEach(fId => {
         const el = document.getElementById(fId);
         if (el) { el.disabled = esReservaEnProceso; el.style.opacity = esReservaEnProceso ? '0.6' : ''; }
     });
