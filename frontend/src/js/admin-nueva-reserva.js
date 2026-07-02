@@ -1062,7 +1062,7 @@ document.getElementById('reservationForm').addEventListener('submit', async(e)=>
             body: JSON.stringify(data)
         });
         if (response.ok) {
-            mostrarNotificacion('✓ Reserva creada correctamente.','success');
+            mostrarNotificacion('✓ ¡Reserva creada con éxito! Se ha enviado un correo de confirmación al cliente — recuérdale revisar también su carpeta de spam.','success');
             setTimeout(()=>{ window.location.href='/src/pages/admin.html#reservas'; },1500);
         } else {
             const err = await response.json();

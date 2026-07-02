@@ -19,6 +19,51 @@ let fpEnd = null;
 let precioConfig = { porcentajePersonaExtra: 0.40, ocupacionEstandar: 2 };
 
 /* -----------------------------------------------
+   NOTIFICACIONES TOAST
+   ----------------------------------------------- */
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    // Inyectar animación una sola vez
+    if (!document.getElementById('nr-notif-style')) {
+        const s = document.createElement('style');
+        s.id = 'nr-notif-style';
+        s.textContent = '@keyframes nr-slideIn{from{opacity:0;transform:translateX(2rem)}to{opacity:1;transform:translateX(0)}}';
+        document.head.appendChild(s);
+    }
+    let container = document.getElementById('nr-notif-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'nr-notif-container';
+        container.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:99999;display:flex;flex-direction:column;gap:0.6rem;';
+        document.body.appendChild(container);
+    }
+    const colors = {
+        success: { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.45)', icon: '✓', color: '#10b981' },
+        error:   { bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.45)',  icon: '✕', color: '#ef4444' },
+        warning: { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.45)', icon: '⚠', color: '#f59e0b' },
+    };
+    const cfg = colors[tipo] || colors.success;
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        display:flex;align-items:flex-start;gap:0.75rem;max-width:380px;
+        padding:1rem 1.25rem;border-radius:12px;background:${cfg.bg};
+        border:1px solid ${cfg.border};color:#1A2B4A;font-size:0.875rem;
+        line-height:1.45;box-shadow:0 8px 28px rgba(0,0,0,0.14);
+        animation:nr-slideIn 0.28s ease;
+    `;
+    notif.innerHTML = `
+        <span style="color:${cfg.color};font-size:1.15rem;font-weight:700;flex-shrink:0;margin-top:0.05rem;">${cfg.icon}</span>
+        <span>${mensaje}</span>
+    `;
+    container.appendChild(notif);
+    const duracion = tipo === 'success' ? 4500 : 3500;
+    setTimeout(() => {
+        notif.style.transition = 'opacity 0.35s';
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 350);
+    }, duracion);
+}
+
+/* -----------------------------------------------
    UTILIDADES DE FECHA
    ----------------------------------------------- */
 function getTodayInputValue() {
@@ -1288,17 +1333,17 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
     const metodoPagoVal = document.getElementById('MetodoPago').value;
 
     if (!habitacionVal && !cabanaVal && !paqueteVal) {
-        alert('Debes seleccionar un alojamiento (Habitación, Cabaña o Paquete).');
+        mostrarNotificacion('Debes seleccionar un alojamiento (Habitación, Cabaña o Paquete).', 'warning');
         return;
     }
     if (!metodoPagoVal) {
-        alert('Debes seleccionar un método de pago.');
+        mostrarNotificacion('Debes seleccionar un método de pago.', 'warning');
         return;
     }
 
     const tcCheck = document.getElementById('aceptaTerminos');
     if (!tcCheck || !tcCheck.checked) {
-        alert('Debes aceptar los Términos y Condiciones para confirmar la reserva.');
+        mostrarNotificacion('Debes aceptar los Términos y Condiciones para confirmar la reserva.', 'warning');
         return;
     }
 
@@ -1326,18 +1371,21 @@ document.getElementById('reservationForm').addEventListener('submit', async (e) 
             body: JSON.stringify(data)
         });
         if (response.ok) {
-            alert('Reserva creada exitosamente');
+            mostrarNotificacion(
+                '¡Reserva creada con éxito! Revisa tu bandeja de entrada (y carpeta de spam) donde encontrarás el correo de confirmación con los detalles de tu alojamiento.',
+                'success'
+            );
             if (isAdminEmbed && window.parent && window.parent !== window) {
-                window.parent.postMessage({ type: 'nuevaReservaSuccess' }, window.location.origin);
+                setTimeout(() => window.parent.postMessage({ type: 'nuevaReservaSuccess' }, window.location.origin), 500);
             } else {
-                window.location.href = '/src/pages/reservas.html';
+                setTimeout(() => { window.location.href = '/src/pages/reservas.html'; }, 3000);
             }
         } else {
             const error = await response.json();
-            alert(error.message || 'Error al crear la reserva');
+            mostrarNotificacion(error.message || 'Error al crear la reserva. Inténtalo de nuevo.', 'error');
         }
     } catch (error) {
-        alert('Error de conexión');
+        mostrarNotificacion('Error de conexión con el servidor. Verifica tu internet e inténtalo de nuevo.', 'error');
     }
 });
 
