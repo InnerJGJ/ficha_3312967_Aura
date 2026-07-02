@@ -138,7 +138,8 @@ const getReservationsByUser = async (userId) => {
                  LEFT JOIN habitacion h_paq ON p.IDHabitacion = h_paq.IDHabitacion
                  LEFT JOIN detallereservacabana drc ON r.IdReserva = drc.IDReserva
                  LEFT JOIN cabanas c ON drc.IDCabana = c.IDCabana
-                 WHERE r.UsuarioIdusuario = ?`;
+                 WHERE r.UsuarioIdusuario = ?
+                 ORDER BY r.IdReserva DESC`;
     const [results] = await db.query(sql, [parsedUserId]);
     return results;
   } catch (error) {
