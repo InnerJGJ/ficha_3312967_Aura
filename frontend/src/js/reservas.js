@@ -70,8 +70,67 @@ function getDisabledDatesForRoom(roomId, excludeResId) {
     return disabledDates;
 }
 
-function updateEditDatePickerRestrictions() {
-    // No se usa flatpickr en el modal de edición del cliente (usa <input type="date"> nativo)
+async function updateEditDatePickerRestrictions() {
+    const tipo      = document.getElementById('editTipoAloj')?.value || 'habitacion';
+    const alojId    = document.getElementById('editAlojamiento')?.value;
+    const excludeId = document.getElementById('editIdReserva')?.value;
+    const savedStart = document.getElementById('editFechaInicio')?.value  || '';
+    const savedEnd   = document.getElementById('editFechaFinalizacion')?.value || '';
+
+    // Destruir instancias anteriores
+    if (fpEditStart) { fpEditStart.destroy(); fpEditStart = null; }
+    if (fpEditEnd)   { fpEditEnd.destroy();   fpEditEnd   = null; }
+
+    let disabledDates = [];
+    let blockedRanges = [];
+
+    if (alojId) {
+        try {
+            const r = await fetch(`/api/reservas/confirmed/accommodation/${alojId}?type=${tipo}&excludeId=${excludeId}`);
+            if (r.ok) {
+                const occupied = await r.json();
+                blockedRanges = occupied
+                    .filter(o => o.FechaInicio && o.FechaFinalizacion)
+                    .map(o => ({ start: o.FechaInicio.split('T')[0], end: o.FechaFinalizacion.split('T')[0] }));
+                blockedRanges.forEach(range => {
+                    let d = new Date(range.start + 'T00:00:00');
+                    const end = new Date(range.end + 'T00:00:00');
+                    while (d <= end) {
+                        disabledDates.push(d.toISOString().split('T')[0]);
+                        d.setDate(d.getDate() + 1);
+                    }
+                });
+            }
+        } catch (_) {}
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    fpEditStart = flatpickr('#editFechaInicio', {
+        minDate: today, disable: disabledDates, dateFormat: 'Y-m-d',
+        defaultDate: savedStart || today, locale: 'es', appendTo: document.body,
+        onChange(selectedDates) {
+            if (selectedDates.length > 0 && fpEditEnd) {
+                const next = new Date(selectedDates[0].getTime() + 86400000);
+                fpEditEnd.set('minDate', next.toISOString().split('T')[0]);
+            }
+            calcularTotalEdicion();
+        }
+    });
+    fpEditEnd = flatpickr('#editFechaFinalizacion', {
+        minDate: today, disable: disabledDates, dateFormat: 'Y-m-d',
+        defaultDate: savedEnd || null, locale: 'es', appendTo: document.body,
+        onChange() { calcularTotalEdicion(); }
+    });
+
+    // Si las fechas actuales solapan con las bloqueadas → limpiarlas
+    const rangeConflicts = savedStart && savedEnd &&
+        blockedRanges.some(r => savedStart < r.end && savedEnd > r.start);
+    if (rangeConflicts) {
+        if (fpEditStart) fpEditStart.clear();
+        if (fpEditEnd)   fpEditEnd.clear();
+        mostrarNotificacion('⚠️ Las fechas seleccionadas están ocupadas para este alojamiento. Elige otras fechas.', 'warning');
+    }
 }
 
 function isRangeOverlapping(start, end, range) {
@@ -159,6 +218,7 @@ window.clientSwitchTipo = function(tipo) {
     document.getElementById('editAlojLabel').textContent = labels[tipo];
     updateTabStyles(tipo);
     calcularTotalEdicion();
+    updateEditDatePickerRestrictions();
 };
 
 async function cargarServicios() {
@@ -491,7 +551,7 @@ function populateEditForm(reservation) {
             banner.style.display = 'none';
         }
     }
-    ['editFechaInicio', 'editFechaFinalizacion', 'editMetodoPago', 'editAlojamiento'].forEach(fId => {
+    ['editMetodoPago', 'editAlojamiento'].forEach(fId => {
         const el = document.getElementById(fId);
         if (el) { el.disabled = esReservaEnProceso; el.style.opacity = esReservaEnProceso ? '0.6' : ''; }
     });
@@ -501,6 +561,17 @@ function populateEditForm(reservation) {
     });
     const montoLabel = document.getElementById('editMontoTotalLabel');
     if (montoLabel) montoLabel.textContent = 'Monto Total Estimado';
+
+    // Inicializar flatpickr con fechas bloqueadas (solo Pendiente; EnProceso/Confirmada no editan fechas)
+    if (!esReservaEnProceso) {
+        updateEditDatePickerRestrictions();
+        // Cuando cambia el select de alojamiento, recargar fechas bloqueadas
+        const alojSel = document.getElementById('editAlojamiento');
+        if (alojSel) {
+            alojSel.removeEventListener('change', updateEditDatePickerRestrictions);
+            alojSel.addEventListener('change', updateEditDatePickerRestrictions);
+        }
+    }
 }
 
 window.editAjustarCantidad = function(id, delta) {

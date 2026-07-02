@@ -998,14 +998,22 @@ window.editarReserva = async (id) => {
                     b.style.borderColor    = a ? '#2B6CB0' : 'rgba(43,108,176,0.3)';
                 });
                 erRecalcular();
+                if (!esEnProceso) _initErFlatpickr(r.IdReserva);
             });
         });
 
-        // Recalcular al cambiar fechas o alojamiento
-        ['er_fechaInicio','er_fechaFin','er_alojamiento'].forEach(elId =>
-            document.getElementById(elId)?.addEventListener('change', erRecalcular)
-        );
+        // Recalcular al cambiar alojamiento
+        document.getElementById('er_alojamiento')?.addEventListener('change', () => {
+            erRecalcular();
+            if (!esEnProceso) _initErFlatpickr(r.IdReserva);
+        });
+
         // los checkboxes ya tienen onchange="erRecalcular()" en el HTML generado
+
+        // Inicializar flatpickr con fechas bloqueadas (solo Pendiente)
+        if (!esEnProceso) {
+            _initErFlatpickr(r.IdReserva);
+        }
 
         document.getElementById('modalOverlay').classList.add('activo');
     } catch(e) {
@@ -1013,6 +1021,70 @@ window.editarReserva = async (id) => {
         mostrarNotificacion('Error al cargar datos de la reserva.', 'error');
     }
 };
+
+let _fpErStart = null;
+let _fpErEnd   = null;
+
+async function _initErFlatpickr(reservaId) {
+    const tipo    = document.getElementById('er_tipoAloj')?.value || 'habitacion';
+    const alojId  = document.getElementById('er_alojamiento')?.value;
+    const savedStart = document.getElementById('er_fechaInicio')?.value || '';
+    const savedEnd   = document.getElementById('er_fechaFin')?.value || '';
+
+    if (_fpErStart) { _fpErStart.destroy(); _fpErStart = null; }
+    if (_fpErEnd)   { _fpErEnd.destroy();   _fpErEnd   = null; }
+
+    let disabledDates = [];
+    let blockedRanges = [];
+
+    if (alojId) {
+        try {
+            const r = await fetch(`/api/reservas/confirmed/accommodation/${alojId}?type=${tipo}&excludeId=${reservaId}`);
+            if (r.ok) {
+                const occupied = await r.json();
+                blockedRanges = occupied
+                    .filter(o => o.FechaInicio && o.FechaFinalizacion)
+                    .map(o => ({ start: o.FechaInicio.split('T')[0], end: o.FechaFinalizacion.split('T')[0] }));
+                blockedRanges.forEach(range => {
+                    let d = new Date(range.start + 'T00:00:00');
+                    const end = new Date(range.end + 'T00:00:00');
+                    while (d <= end) {
+                        disabledDates.push(d.toISOString().split('T')[0]);
+                        d.setDate(d.getDate() + 1);
+                    }
+                });
+            }
+        } catch (_) {}
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    _fpErStart = flatpickr('#er_fechaInicio', {
+        minDate: today, disable: disabledDates, dateFormat: 'Y-m-d',
+        defaultDate: savedStart || today, locale: 'es', appendTo: document.body,
+        onChange(selectedDates) {
+            if (selectedDates.length > 0 && _fpErEnd) {
+                const next = new Date(selectedDates[0].getTime() + 86400000);
+                _fpErEnd.set('minDate', next.toISOString().split('T')[0]);
+            }
+            erRecalcular();
+        }
+    });
+    _fpErEnd = flatpickr('#er_fechaFin', {
+        minDate: today, disable: disabledDates, dateFormat: 'Y-m-d',
+        defaultDate: savedEnd || null, locale: 'es', appendTo: document.body,
+        onChange() { erRecalcular(); }
+    });
+
+    // Si las fechas actuales solapan con bloqueadas → limpiarlas
+    const rangeConflicts = savedStart && savedEnd &&
+        blockedRanges.some(r => savedStart < r.end && savedEnd > r.start);
+    if (rangeConflicts) {
+        if (_fpErStart) _fpErStart.clear();
+        if (_fpErEnd)   _fpErEnd.clear();
+        mostrarNotificacion('⚠️ Las fechas seleccionadas están ocupadas para este alojamiento. Elige otras fechas.', 'warning');
+    }
+}
 
 async function _checkDisponibilidadAloj(alojId, tipo, fechaInicio, fechaFin, excludeId) {
     try {
