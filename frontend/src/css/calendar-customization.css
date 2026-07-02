@@ -8,6 +8,7 @@
   border-radius: 18px;
   box-shadow: 0 12px 40px rgba(26,43,74,0.15);
   padding: 1.2rem;
+  box-sizing: content-box !important;
   font-family: var(--fuente-principal, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
 }
 
