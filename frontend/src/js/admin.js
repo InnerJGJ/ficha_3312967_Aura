@@ -919,16 +919,10 @@ window.editarReserva = async (id) => {
                     <input type="date" id="er_fechaFin" value="${fmt(r.FechaFinalizacion)}" class="form-input" required ${esEnProceso ? 'disabled style="opacity:0.7;background:rgba(0,0,0,0.04);"' : ''}>
                 </div>
 
-                <!-- Estado / Método -->
-                <div class="form-group">
-                    <label>⚙️ ESTADO RESERVA</label>
-                    <select id="er_estado" class="form-input">
-                        ${estados.map(e => `<option value="${e.IdEstadoReserva}"${e.IdEstadoReserva===r.IdEstadoReserva?' selected':''}>${e.NombreEstadoReserva}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
+                <!-- Método de Pago (deshabilitado en Confirmada: el pago ya fue acreditado) -->
+                <div class="form-group" style="grid-column:1/-1;">
                     <label>💳 MÉTODO DE PAGO</label>
-                    <select id="er_metodoPago" class="form-input">
+                    <select id="er_metodoPago" class="form-input" ${r.IdEstadoReserva === 2 ? 'disabled style="opacity:0.7;background:rgba(0,0,0,0.04);"' : ''}>
                         ${metodos.map(m => { const mid=m.IdMetodoPago||m.IDMetodoPago; return `<option value="${mid}"${mid===r.MetodoPago?' selected':''}>${m.NomMetodoPago||m.Nombre||'—'}</option>`; }).join('')}
                     </select>
                 </div>
@@ -1038,7 +1032,6 @@ window.editarReserva = async (id) => {
 };
 
 window.guardarReserva = async (id) => {
-    const idEstado = document.getElementById('er_estado')?.value;
     const estadoOriginalBD = Number(document.getElementById('er_estadoOriginal')?.value);
     // Estados 2 (Confirmada) y 5 (En Proceso) bloquean campos principales
     const esBloqueada = estadoOriginalBD === 5 || estadoOriginalBD === 2;
@@ -1049,14 +1042,9 @@ window.guardarReserva = async (id) => {
             Cantidad: parseInt(document.querySelector(`.er-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1)
         }));
 
-    // Confirmada / En Proceso: solo servicios (+ estado y método de pago para Confirmada)
+    // Confirmada / En Proceso: solo servicios adicionales
     if (esBloqueada) {
         const payload = { serviciosAdicionales };
-        if (estadoOriginalBD === 2) {
-            payload.IdEstadoReserva = Number(idEstado);
-            const idMetodo = Number(document.getElementById('er_metodoPago')?.value);
-            if (idMetodo) payload.MetodoPago = idMetodo;
-        }
         try {
             const res = await fetch(`/api/reservas/${id}`, {
                 method: 'PUT',
@@ -1095,7 +1083,6 @@ window.guardarReserva = async (id) => {
     const payload = {
         FechaInicio:          fechaInicio,
         FechaFinalizacion:    fechaFin,
-        IdEstadoReserva:      Number(idEstado),
         MetodoPago:           Number(idMetodo),
         serviciosAdicionales,
     };
