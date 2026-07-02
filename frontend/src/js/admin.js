@@ -801,8 +801,6 @@ function erRecalcular() {
         : 1;
     const alojSelect    = document.getElementById('er_alojamiento');
     const alojPrecio    = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
-    const paqAdicSelect = document.getElementById('er_paqueteAdicional');
-    const paqAdicPrecio = paqAdicSelect?.value ? Number(paqAdicSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
     const totalServicios = [...document.querySelectorAll('#er_servicios_grid .er-srv-check:checked')]
         .reduce((sum, cb) => {
             const qty = parseInt(document.querySelector(`.er-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
@@ -815,8 +813,7 @@ function erRecalcular() {
         const lbl = document.querySelector(`.er-srv-total[data-servicio-id="${cb.value}"]`);
         if (lbl) lbl.textContent = cb.checked && qty > 1 ? `= $${t.toLocaleString('es-CO')}` : '';
     });
-    // Precios fijos todo el año — sin multiplicador de temporada
-    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
+    const total = alojPrecio * noches + totalServicios;
     const el = document.getElementById('er_monto');
     if (el) el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
@@ -849,13 +846,10 @@ window.editarReserva = async (id) => {
         // evitar que la habitación interna del paquete se interprete como habitación directa.
         let tipoActual = 'habitacion';
         let idAlojActual = null;
-        let idPaqueteAdicional = null;
         if (r.IDCabana) {
             tipoActual = 'cabana';     idAlojActual = r.IDCabana;
-            idPaqueteAdicional = r.IDPaquete || null;
         } else if (r.IDHabitacionDirecta) {
             tipoActual = 'habitacion'; idAlojActual = r.IDHabitacionDirecta;
-            idPaqueteAdicional = r.IDPaquete || null;
         } else if (r.IDPaquete) {
             tipoActual = 'paquete';    idAlojActual = r.IDPaquete;
         }
@@ -943,15 +937,6 @@ window.editarReserva = async (id) => {
                     </select>
                 </div>
 
-                <!-- Paquete adicional (visible cuando el alojamiento es habitación o cabaña) -->
-                <div id="er_paquete_adicional_wrap" class="form-group" style="grid-column:1/-1;${tipoActual === 'paquete' ? 'display:none;' : ''}${esEnProceso ? 'opacity:0.6;pointer-events:none;' : ''}">
-                    <label style="font-size:0.72rem;">📦 PAQUETE ADICIONAL <span style="font-weight:400;color:rgba(26,43,74,0.5);">(opcional)</span></label>
-                    <select id="er_paqueteAdicional" class="form-input" onchange="erRecalcular()">
-                        <option value="">Sin paquete adicional</option>
-                        ${paquetes.map(p => `<option value="${p.IDPaquete}" data-precio="${p.precio}"${p.IDPaquete == idPaqueteAdicional ? ' selected' : ''}>${p.nombre} — $${Number(p.precio).toLocaleString('es-CO')}/noche</option>`).join('')}
-                    </select>
-                </div>
-
                 <!-- Servicios -->
                 ${separador('⭐','Servicios Adicionales')}
                 <div id="er_servicios_grid" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;">
@@ -1006,12 +991,6 @@ window.editarReserva = async (id) => {
                 document.getElementById('er_alojamiento').innerHTML = renderOpciones(tipo, null);
                 const lbl = { habitacion:'🛏 Habitación', cabana:'🏕 Cabaña', paquete:'📦 Paquete' };
                 document.getElementById('er_aloj_label').textContent = lbl[tipo];
-                // Mostrar/ocultar paquete adicional según el tipo seleccionado
-                const paqWrap = document.getElementById('er_paquete_adicional_wrap');
-                if (paqWrap) {
-                    paqWrap.style.display = tipo === 'paquete' ? 'none' : '';
-                    if (tipo === 'paquete') document.getElementById('er_paqueteAdicional').value = '';
-                }
                 document.querySelectorAll('.er-tipo-btn').forEach(b => {
                     const a = b.dataset.tipo === tipo;
                     b.style.background     = a ? '#2B6CB0' : '#fff';
@@ -1022,8 +1001,8 @@ window.editarReserva = async (id) => {
             });
         });
 
-        // Recalcular al cambiar fechas, alojamiento, paquete adicional o servicios
-        ['er_fechaInicio','er_fechaFin','er_alojamiento','er_paqueteAdicional'].forEach(elId =>
+        // Recalcular al cambiar fechas o alojamiento
+        ['er_fechaInicio','er_fechaFin','er_alojamiento'].forEach(elId =>
             document.getElementById(elId)?.addEventListener('change', erRecalcular)
         );
         // los checkboxes ya tienen onchange="erRecalcular()" en el HTML generado
@@ -1105,15 +1084,6 @@ window.guardarReserva = async (id) => {
             return;
         }
     }
-    const paqAdicId = tipoAloj !== 'paquete' ? document.getElementById('er_paqueteAdicional')?.value : null;
-    if (paqAdicId) {
-        const paqLibre = await _checkDisponibilidadAloj(paqAdicId, 'paquete', fechaInicio, fechaFin, id);
-        if (!paqLibre) {
-            mostrarNotificacion('El paquete adicional seleccionado no está disponible para las fechas indicadas.', 'error');
-            return;
-        }
-    }
-
     const payload = {
         FechaInicio:          fechaInicio,
         FechaFinalizacion:    fechaFin,
@@ -1123,10 +1093,6 @@ window.guardarReserva = async (id) => {
     if (tipoAloj === 'habitacion') payload.IDHabitacion = Number(idAloj);
     else if (tipoAloj === 'cabana')   payload.IDCabana    = Number(idAloj);
     else if (tipoAloj === 'paquete')  payload.IDPaquete   = Number(idAloj);
-    // Paquete adicional: solo aplica cuando el alojamiento es habitación o cabaña
-    if (tipoAloj !== 'paquete') {
-        if (paqAdicId) payload.IDPaquete = Number(paqAdicId);
-    }
 
     try {
         const res = await fetch(`/api/reservas/${id}`, {
