@@ -119,17 +119,6 @@ async function cargarPaquetes() {
     paquetesData = await response.json();
 }
 
-function populatePaqueteAdicional(selectedId) {
-    const sel = document.getElementById('editPaqueteAdicional');
-    if (!sel) return;
-    const activos = paquetesData.filter(p => (p.Estado ?? 1) !== 0);
-    sel.innerHTML = '<option value="">Sin paquete adicional</option>' +
-        activos.map(p => {
-            const precio = Number(p.Precio || p.precio || 0);
-            const sel2 = selectedId && String(p.IDPaquete) === String(selectedId) ? ' selected' : '';
-            return `<option value="${p.IDPaquete}" data-precio="${precio}"${sel2}>${p.NombrePaquete || p.nombre} — $${precio.toLocaleString('es-CO')}/noche</option>`;
-        }).join('');
-}
 
 function renderOpcionesEdicion(tipo, selId) {
     const cfg = {
@@ -169,15 +158,6 @@ window.clientSwitchTipo = function(tipo) {
     const labels = { habitacion: 'Selecciona una habitación', cabana: 'Selecciona una cabaña', paquete: 'Selecciona un paquete' };
     document.getElementById('editAlojLabel').textContent = labels[tipo];
     updateTabStyles(tipo);
-    // Mostrar/ocultar paquete adicional según el tipo seleccionado
-    const paqWrap = document.getElementById('editPaqueteAdicionalWrap');
-    if (paqWrap) {
-        paqWrap.style.display = tipo === 'paquete' ? 'none' : '';
-        if (tipo === 'paquete') {
-            const paqSel = document.getElementById('editPaqueteAdicional');
-            if (paqSel) paqSel.value = '';
-        }
-    }
     calcularTotalEdicion();
 };
 
@@ -466,17 +446,14 @@ function populateEditForm(reservation) {
 
     let tipoActual = 'habitacion';
     let idAlojActual = null;
-    let idPaqueteAdicional = null;
 
     // FIX: Usar IDHabitacionDirecta (NULL si la reserva es solo paquete) para
     // evitar que la habitación interna del paquete se interprete como habitación directa
     // y duplique el costo en el cálculo del total.
     if (reservation.IDCabana) {
         tipoActual = 'cabana';     idAlojActual = reservation.IDCabana;
-        idPaqueteAdicional = reservation.IDPaquete || null;
     } else if (reservation.IDHabitacionDirecta) {
         tipoActual = 'habitacion'; idAlojActual = reservation.IDHabitacionDirecta;
-        idPaqueteAdicional = reservation.IDPaquete || null;
     } else if (reservation.IDPaquete) {
         tipoActual = 'paquete';    idAlojActual = reservation.IDPaquete;
     }
@@ -486,11 +463,6 @@ function populateEditForm(reservation) {
     const labels = { habitacion: 'Selecciona una habitación', cabana: 'Selecciona una cabaña', paquete: 'Selecciona un paquete' };
     document.getElementById('editAlojLabel').textContent = labels[tipoActual];
     updateTabStyles(tipoActual);
-
-    // Poblar y configurar paquete adicional
-    populatePaqueteAdicional(idPaqueteAdicional);
-    const paqWrap = document.getElementById('editPaqueteAdicionalWrap');
-    if (paqWrap) paqWrap.style.display = tipoActual === 'paquete' ? 'none' : '';
 
     document.getElementById('editFechaInicio').value = reservation.FechaInicio ? reservation.FechaInicio.split('T')[0] : '';
     document.getElementById('editFechaFinalizacion').value = reservation.FechaFinalizacion ? reservation.FechaFinalizacion.split('T')[0] : '';
@@ -519,7 +491,7 @@ function populateEditForm(reservation) {
             banner.style.display = 'none';
         }
     }
-    ['editFechaInicio', 'editFechaFinalizacion', 'editMetodoPago', 'editAlojamiento', 'editPaqueteAdicional'].forEach(fId => {
+    ['editFechaInicio', 'editFechaFinalizacion', 'editMetodoPago', 'editAlojamiento'].forEach(fId => {
         const el = document.getElementById(fId);
         if (el) { el.disabled = esReservaEnProceso; el.style.opacity = esReservaEnProceso ? '0.6' : ''; }
     });
@@ -527,10 +499,6 @@ function populateEditForm(reservation) {
         const btn = document.getElementById(tId);
         if (btn) { btn.disabled = esReservaEnProceso; btn.style.opacity = esReservaEnProceso ? '0.45' : '1'; btn.style.cursor = esReservaEnProceso ? 'not-allowed' : 'pointer'; }
     });
-    if (esReservaEnProceso) {
-        const pw = document.getElementById('editPaqueteAdicionalWrap');
-        if (pw) pw.style.display = 'none';
-    }
     const montoLabel = document.getElementById('editMontoTotalLabel');
     if (montoLabel) montoLabel.textContent = 'Monto Total Estimado';
 }
@@ -600,10 +568,8 @@ function calcularTotalEdicion() {
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
         ? Math.round((new Date(fin) - new Date(inicio)) / 86400000) : 1;
 
-    const alojSelect    = document.getElementById('editAlojamiento');
-    const alojPrecio    = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
-    const paqAdicSelect = document.getElementById('editPaqueteAdicional');
-    const paqAdicPrecio = paqAdicSelect?.value ? Number(paqAdicSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
+    const alojSelect = document.getElementById('editAlojamiento');
+    const alojPrecio = alojSelect ? Number(alojSelect.selectedOptions[0]?.dataset.precio || 0) : 0;
 
     const totalServicios = Array.from(document.querySelectorAll('.edit-servicio-check:checked'))
         .reduce((sum, cb) => {
@@ -611,7 +577,7 @@ function calcularTotalEdicion() {
             return sum + Number(cb.dataset.costo || 0) * qty;
         }, 0);
 
-    const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
+    const total = alojPrecio * noches + totalServicios;
     el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
 
@@ -675,22 +641,12 @@ async function guardarEdicion() {
     if (tipo === 'habitacion') data.IDHabitacion = parseInt(idAloj);
     else if (tipo === 'cabana')   data.IDCabana    = parseInt(idAloj);
     else if (tipo === 'paquete')  data.IDPaquete   = parseInt(idAloj);
-    // Paquete adicional: solo aplica cuando el alojamiento es habitación o cabaña
-    const paqAdicId = tipo !== 'paquete' ? document.getElementById('editPaqueteAdicional')?.value : null;
-    if (paqAdicId) data.IDPaquete = parseInt(paqAdicId);
 
     // Overbooking: verificar disponibilidad antes de guardar (mismo criterio que creación)
     if (idAloj && tipo) {
         const alojDisp = await _checkDisponibilidad(idAloj, tipo, data.FechaInicio, data.FechaFinalizacion, id);
         if (!alojDisp) {
             alert('El alojamiento seleccionado no está disponible para las fechas indicadas.');
-            return;
-        }
-    }
-    if (paqAdicId) {
-        const paqDisp = await _checkDisponibilidad(paqAdicId, 'paquete', data.FechaInicio, data.FechaFinalizacion, id);
-        if (!paqDisp) {
-            alert('El paquete adicional seleccionado no está disponible para las fechas indicadas.');
             return;
         }
     }
