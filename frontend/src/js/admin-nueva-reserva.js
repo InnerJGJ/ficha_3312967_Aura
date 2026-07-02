@@ -585,16 +585,33 @@ function reinitFlatpickrs(disabled, savedStart, savedEnd) {
 
 async function updateDatePickerRestrictions() {
     // Guardar fechas actuales ANTES del await — el redraw de flatpickr las borraría
-    const savedStart = document.getElementById('FechaInicio')?.value || getTodayInputValue();
-    const savedEnd   = document.getElementById('FechaFinalizacion')?.value || getTomorrowInputValue();
+    const savedStart = document.getElementById('FechaInicio')?.value || '';
+    const savedEnd   = document.getElementById('FechaFinalizacion')?.value || '';
 
     const roomId = getSelectedRoomId();
     const type   = getSelectedAccommodationType();
     const confirmed = roomId ? await cargarReservasConfirmadasPorAlojamiento(roomId, type) : [];
     allReservations = confirmed;
+    const blockedRanges = getRoomBlockedRanges(roomId);
     const disabled = getDisabledDatesForRoom(roomId);
 
     reinitFlatpickrs(disabled, savedStart, savedEnd);
+
+    // Si las fechas ya seleccionadas solapan con las bloqueadas, limpiarlas
+    const rangeConflicts = savedStart && savedEnd &&
+        blockedRanges.some(r => isRangeOverlapping(savedStart, savedEnd, r));
+    if (rangeConflicts) {
+        if (fpStart) fpStart.clear();
+        if (fpEnd)   fpEnd.clear();
+        const msgEl = document.getElementById('dateAvailabilityMessage');
+        if (msgEl) {
+            msgEl.innerHTML = '⚠️ <strong style="color:#dc2626;">Las fechas seleccionadas están ocupadas para este alojamiento.</strong> Los días bloqueados (en rojo) no están disponibles — por favor elige otras fechas.';
+            msgEl.style.color = '';
+        }
+    } else {
+        updateAvailabilityMessage();
+        validateDateSelection();
+    }
 }
 function getDisabledDatesForRoom(roomId) {
     if (!roomId) return [];
@@ -616,7 +633,14 @@ function updateAvailabilityMessage() {
     const el = document.getElementById('dateAvailabilityMessage');
     if (!el) return;
     if (!roomId) { el.innerHTML='<em>Selecciona una habitación, cabaña o paquete para ver las fechas disponibles.</em>'; el.style.color='rgba(26,43,74,0.65)'; return; }
-    el.innerHTML='<strong style="color:#16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.'; el.style.color='rgba(26,43,74,0.8)';
+    const blocked = getRoomBlockedRanges(roomId);
+    if (blocked.length > 0) {
+        el.innerHTML='⚠️ <strong style="color:#d97706;">Fechas limitadas:</strong> Este alojamiento tiene días ocupados (marcados en rojo). Elige un rango disponible.';
+        el.style.color='rgba(26,43,74,0.8)';
+    } else {
+        el.innerHTML='<strong style="color:#16a34a;">✓ Disponible:</strong> El alojamiento seleccionado está completamente disponible.';
+        el.style.color='rgba(26,43,74,0.8)';
+    }
 }
 function validateDateSelection() {
     const roomId = getSelectedRoomId();
