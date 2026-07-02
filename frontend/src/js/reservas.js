@@ -532,7 +532,7 @@ function populateEditForm(reservation) {
         if (pw) pw.style.display = 'none';
     }
     const montoLabel = document.getElementById('editMontoTotalLabel');
-    if (montoLabel) montoLabel.textContent = reservation.IdEstadoReserva === 5 ? 'Cargo adicional (nuevos servicios)' : 'Monto Total Estimado';
+    if (montoLabel) montoLabel.textContent = 'Monto Total Estimado';
 }
 
 window.editAjustarCantidad = function(id, delta) {
@@ -594,19 +594,7 @@ function calcularTotalEdicion() {
     const el = document.getElementById('editMontoTotal');
     if (!el) return;
 
-    if (esReservaEnProceso) {
-        // En Proceso: solo sumar servicios NUEVOS (los que no estaban ya en la reserva)
-        const totalNuevos = Array.from(document.querySelectorAll('.edit-servicio-check:checked'))
-            .filter(cb => !serviciosExistentesIds.has(Number(cb.value)))
-            .reduce((sum, cb) => {
-                const qty = parseInt(document.querySelector(`.edit-srv-qty[data-servicio-id="${cb.value}"]`)?.value || 1);
-                return sum + Number(cb.dataset.costo || 0) * qty;
-            }, 0);
-        el.value = `$${totalNuevos.toLocaleString('es-CO')}`;
-        return;
-    }
-
-    // Reserva normal: cálculo completo
+    // Cálculo completo: alojamiento + todos los servicios seleccionados (igual que la vista admin)
     const inicio = document.getElementById('editFechaInicio')?.value;
     const fin    = document.getElementById('editFechaFinalizacion')?.value;
     const noches = (inicio && fin && new Date(fin) > new Date(inicio))
@@ -623,7 +611,6 @@ function calcularTotalEdicion() {
             return sum + Number(cb.dataset.costo || 0) * qty;
         }, 0);
 
-    // Los precios ya incluyen IVA. El backend usa precio fijo sin multiplicador de temporada.
     const total = (alojPrecio + paqAdicPrecio) * noches + totalServicios;
     el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
