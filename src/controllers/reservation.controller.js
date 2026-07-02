@@ -121,15 +121,16 @@ const getConfirmedReservations = async (req, res, next) => {
 const getConfirmedReservationsByAccommodation = async (req, res, next) => {
   try {
     const { accommodationId } = req.params;
-    const { type } = req.query; // 'habitacion', 'cabana', 'paquete'
-    
+    const { type, excludeId } = req.query; // type: 'habitacion'|'cabana'|'paquete'; excludeId: reserva a ignorar
+
     if (!accommodationId) {
       return res.status(400).json({ message: 'accommodationId es requerido' });
     }
 
     const reservations = await reservationService.getConfirmedReservationsByAccommodation(
-      accommodationId, 
-      type || 'habitacion'
+      accommodationId,
+      type || 'habitacion',
+      excludeId || null
     );
     res.json(reservations);
   } catch (error) {

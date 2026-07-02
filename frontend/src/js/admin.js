@@ -1035,6 +1035,19 @@ window.editarReserva = async (id) => {
     }
 };
 
+async function _checkDisponibilidadAloj(alojId, tipo, fechaInicio, fechaFin, excludeId) {
+    try {
+        const res = await fetch(`/api/reservas/confirmed/accommodation/${alojId}?type=${tipo}&excludeId=${excludeId}`);
+        if (!res.ok) return true;
+        const ocupadas = await res.json();
+        return !ocupadas.some(r => {
+            const rs = (r.FechaInicio || '').split('T')[0];
+            const re = (r.FechaFinalizacion || '').split('T')[0];
+            return fechaInicio < re && fechaFin > rs;
+        });
+    } catch (_) { return true; }
+}
+
 window.guardarReserva = async (id) => {
     const estadoOriginalBD = Number(document.getElementById('er_estadoOriginal')?.value);
     // Estados 2 (Confirmada) y 5 (En Proceso) bloquean campos principales
@@ -1084,6 +1097,23 @@ window.guardarReserva = async (id) => {
         return;
     }
 
+    // Overbooking: verificar disponibilidad antes de guardar (mismo criterio que creación)
+    if (idAloj && tipoAloj) {
+        const alojLibre = await _checkDisponibilidadAloj(idAloj, tipoAloj, fechaInicio, fechaFin, id);
+        if (!alojLibre) {
+            mostrarNotificacion('El alojamiento seleccionado no está disponible para las fechas indicadas.', 'error');
+            return;
+        }
+    }
+    const paqAdicId = tipoAloj !== 'paquete' ? document.getElementById('er_paqueteAdicional')?.value : null;
+    if (paqAdicId) {
+        const paqLibre = await _checkDisponibilidadAloj(paqAdicId, 'paquete', fechaInicio, fechaFin, id);
+        if (!paqLibre) {
+            mostrarNotificacion('El paquete adicional seleccionado no está disponible para las fechas indicadas.', 'error');
+            return;
+        }
+    }
+
     const payload = {
         FechaInicio:          fechaInicio,
         FechaFinalizacion:    fechaFin,
@@ -1095,8 +1125,7 @@ window.guardarReserva = async (id) => {
     else if (tipoAloj === 'paquete')  payload.IDPaquete   = Number(idAloj);
     // Paquete adicional: solo aplica cuando el alojamiento es habitación o cabaña
     if (tipoAloj !== 'paquete') {
-        const idPaqAdicional = document.getElementById('er_paqueteAdicional')?.value;
-        if (idPaqAdicional) payload.IDPaquete = Number(idPaqAdicional);
+        if (paqAdicId) payload.IDPaquete = Number(paqAdicId);
     }
 
     try {

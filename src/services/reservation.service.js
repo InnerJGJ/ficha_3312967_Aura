@@ -693,6 +693,19 @@ const updateReservation = async (id, data) => {
         err.statusCode = 400;
         throw err;
       }
+      // Validar overbooking: mismas reglas que en la creación de reservas
+      const checksAloj = [];
+      if (data.IDHabitacion) checksAloj.push({ type: 'habitacion', alojId: data.IDHabitacion });
+      if (data.IDCabana)     checksAloj.push({ type: 'cabana',     alojId: data.IDCabana     });
+      if (data.IDPaquete)    checksAloj.push({ type: 'paquete',    alojId: data.IDPaquete    });
+      for (const { type, alojId } of checksAloj) {
+        const solapada = await checkDateOverlap(type, alojId, data.FechaInicio, data.FechaFinalizacion, id);
+        if (solapada) {
+          const err = new Error('El alojamiento seleccionado no está disponible para las fechas indicadas.');
+          err.statusCode = 409;
+          throw err;
+        }
+      }
     }
     const servicioIds = Array.isArray(data.serviciosAdicionales) ? data.serviciosAdicionales : [];
     const totals = await calculateTotals(data.IDPaquete, data.IDHabitacion, data.IDCabana, servicioIds, data.FechaInicio, data.FechaFinalizacion, data.CantidadHuespedes);
@@ -1045,7 +1058,7 @@ const getConfirmedReservations = async () => {
 // FIX: ahora incluye IdEstadoReserva IN (1, 2, 5) = Pendiente + Confirmada + En Proceso
 // para que fechas con reservas PENDIENTES o EN PROCESO también aparezcan bloqueadas.
 // ─────────────────────────────────────────────────────────────────────────────
-const getConfirmedReservationsByAccommodation = async (accommodationId, type = 'habitacion') => {
+const getConfirmedReservationsByAccommodation = async (accommodationId, type = 'habitacion', excludeId = null) => {
   try {
     if (type === 'paquete') {
       // 1. Reservas directas de este paquete
@@ -1069,16 +1082,17 @@ const getConfirmedReservationsByAccommodation = async (accommodationId, type = '
       if (paqRows.length > 0) {
         const { IDHabitacion, IDCabana } = paqRows[0];
         if (IDHabitacion) {
-          alojResults = await getConfirmedReservationsByAccommodation(IDHabitacion, 'habitacion');
+          alojResults = await getConfirmedReservationsByAccommodation(IDHabitacion, 'habitacion', excludeId);
         } else if (IDCabana) {
-          alojResults = await getConfirmedReservationsByAccommodation(IDCabana, 'cabana');
+          alojResults = await getConfirmedReservationsByAccommodation(IDCabana, 'cabana', excludeId);
         }
       }
 
-      // Fusionar y deduplicar por IdReserva
+      // Fusionar y deduplicar por IdReserva, excluyendo la reserva actual
       const seen = new Set();
       return [...directResults, ...alojResults]
         .filter(r => { const k = r.IdReserva; if (seen.has(k)) return false; seen.add(k); return true; })
+        .filter(r => !excludeId || String(r.IdReserva) !== String(excludeId))
         .sort((a, b) => new Date(a.FechaInicio) - new Date(b.FechaInicio));
 
     } else if (type === 'cabana') {
@@ -1104,7 +1118,7 @@ const getConfirmedReservationsByAccommodation = async (accommodationId, type = '
          ORDER BY FechaInicio ASC`,
         [accommodationId, accommodationId]
       );
-      return results;
+      return excludeId ? results.filter(r => String(r.IdReserva) !== String(excludeId)) : results;
 
     } else {
       // habitacion (default): reservas directas + reservas de paquetes que incluyan esta habitación
@@ -1129,7 +1143,7 @@ const getConfirmedReservationsByAccommodation = async (accommodationId, type = '
          ORDER BY FechaInicio ASC`,
         [accommodationId, accommodationId]
       );
-      return results;
+      return excludeId ? results.filter(r => String(r.IdReserva) !== String(excludeId)) : results;
     }
   } catch (error) {
     throw error;

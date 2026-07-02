@@ -628,6 +628,19 @@ function calcularTotalEdicion() {
     el.value = `$${Math.round(total).toLocaleString('es-CO')}`;
 }
 
+async function _checkDisponibilidad(alojId, tipo, fechaInicio, fechaFin, excludeId) {
+    try {
+        const res = await fetch(`/api/reservas/confirmed/accommodation/${alojId}?type=${tipo}&excludeId=${excludeId}`);
+        if (!res.ok) return true;
+        const ocupadas = await res.json();
+        return !ocupadas.some(r => {
+            const rs = (r.FechaInicio || '').split('T')[0];
+            const re = (r.FechaFinalizacion || '').split('T')[0];
+            return fechaInicio < re && fechaFin > rs;
+        });
+    } catch (_) { return true; }
+}
+
 async function guardarEdicion() {
     const id = document.getElementById('editIdReserva').value;
 
@@ -676,9 +689,23 @@ async function guardarEdicion() {
     else if (tipo === 'cabana')   data.IDCabana    = parseInt(idAloj);
     else if (tipo === 'paquete')  data.IDPaquete   = parseInt(idAloj);
     // Paquete adicional: solo aplica cuando el alojamiento es habitación o cabaña
-    if (tipo !== 'paquete') {
-        const paqAdicId = document.getElementById('editPaqueteAdicional')?.value;
-        if (paqAdicId) data.IDPaquete = parseInt(paqAdicId);
+    const paqAdicId = tipo !== 'paquete' ? document.getElementById('editPaqueteAdicional')?.value : null;
+    if (paqAdicId) data.IDPaquete = parseInt(paqAdicId);
+
+    // Overbooking: verificar disponibilidad antes de guardar (mismo criterio que creación)
+    if (idAloj && tipo) {
+        const alojDisp = await _checkDisponibilidad(idAloj, tipo, data.FechaInicio, data.FechaFinalizacion, id);
+        if (!alojDisp) {
+            alert('El alojamiento seleccionado no está disponible para las fechas indicadas.');
+            return;
+        }
+    }
+    if (paqAdicId) {
+        const paqDisp = await _checkDisponibilidad(paqAdicId, 'paquete', data.FechaInicio, data.FechaFinalizacion, id);
+        if (!paqDisp) {
+            alert('El paquete adicional seleccionado no está disponible para las fechas indicadas.');
+            return;
+        }
     }
 
     try {
