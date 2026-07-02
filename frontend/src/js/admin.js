@@ -612,7 +612,9 @@ window.verDetalleReserva = async (id) => {
         const cfg = estadoConfig[key] || { color: '#6b7280', bg: 'rgba(107,114,128,0.15)', icon: 'help-circle' };
         const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '—';
         const montoFmt = (v) => '$' + Number(v || 0).toLocaleString('es-CO');
-        const alojamiento = r.NombreHabitacion || r.NombreCabana || r.NombrePaquete || '—';
+        const esPaqueteSolo = !r.IDHabitacionDirecta && !!r.IDPaquete;
+        const alojamiento = r.IDCabana ? (r.NombreCabana || '—') : esPaqueteSolo ? (r.NombrePaquete || '—') : (r.NombreHabitacion || '—');
+        const alojTipo    = r.IDCabana ? 'Cabaña' : esPaqueteSolo ? 'Paquete' : 'Habitación';
         const todosServicios = r.servicios || [];
         const serviciosOriginales = todosServicios.filter(s => !s.AgregadoEnProceso);
         const serviciosEnProceso  = todosServicios.filter(s =>  s.AgregadoEnProceso);
@@ -652,8 +654,9 @@ window.verDetalleReserva = async (id) => {
             ? Math.max(1, Math.round((new Date(r.FechaFinalizacion) - new Date(r.FechaInicio)) / 86400000))
             : 1;
         const totalServOrigA = serviciosOriginales.reduce((s, x) => s + Number(x.Subtotal || (Number(x.PrecioUnitario||0) * Number(x.Cantidad||1))), 0);
-        const alojTotal = Math.max(0, Number(r.SubTotal || 0) - totalServOrigA);
-        const alojUnit  = noches > 0 ? Math.round(alojTotal / noches) : alojTotal;
+        const alojPrecioUnit = r.IDCabana ? Number(r.PrecioCabana || 0) : esPaqueteSolo ? Number(r.PrecioPaquete || 0) : Number(r.CostoHabitacion || 0);
+        const alojUnit  = alojPrecioUnit;
+        const alojTotal = alojPrecioUnit * noches;
         const idNum = String(r.IdReserva || '').padStart(6, '0');
 
         const trSrvAdmin = (s, esAdic) => {
@@ -699,7 +702,7 @@ window.verDetalleReserva = async (id) => {
             <div class="inv-info__col">
               <div class="inv-info__label">Detalles de la reserva</div>
               <span class="inv-status" style="color:${cfg.color};border-color:${cfg.color}44;background:${cfg.bg};">${r.NombreEstadoReserva || '—'}</span>
-              <div class="inv-info__row"><span><b>Alojamiento:</b> ${alojamiento} (${alojamiento === r.NombrePaquete ? 'Paquete' : alojamiento === r.NombreCabana ? 'Cabaña' : 'Habitación'})</span></div>
+              <div class="inv-info__row"><span><b>Alojamiento:</b> ${alojamiento} (${alojTipo})</span></div>
               <div class="inv-info__row">
                 <span><b>Entrada:</b> ${fmt(r.FechaInicio)}</span>
                 <span><b>Salida:</b> ${fmt(r.FechaFinalizacion)}</span>
@@ -717,7 +720,7 @@ window.verDetalleReserva = async (id) => {
                 <tr class="inv-tr--aloj">
                   <td>
                     <div class="inv-td__name">${alojamiento}</div>
-                    <div class="inv-td__detail">${r.NombrePaquete ? 'Paquete' : r.NombreCabana ? 'Cabaña' : 'Habitación'} · ${noches} noche${noches !== 1 ? 's' : ''}</div>
+                    <div class="inv-td__detail">${alojTipo} · ${noches} noche${noches !== 1 ? 's' : ''}</div>
                   </td>
                   <td class="inv-td--r">${noches}</td>
                   <td class="inv-td--r">$${alojUnit.toLocaleString('es-CO')}</td>

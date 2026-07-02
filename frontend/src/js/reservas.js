@@ -301,8 +301,9 @@ function buildReservationDetails(r) {
     const fmt = f => f ? new Date(f).toLocaleDateString('es-CO', { timeZone: 'UTC', day:'2-digit', month:'short', year:'numeric' }) : '—';
     const mFmt = v => '$' + Number(v || 0).toLocaleString('es-CO');
 
-    const alojamiento = r.NombreHabitacion || r.NombreCabana || r.NombrePaquete || '—';
-    const alojTipo    = r.NombrePaquete ? 'Paquete' : r.NombreCabana ? 'Cabaña' : 'Habitación';
+    const esPaqueteSolo = !r.IDHabitacionDirecta && !!r.IDPaquete;
+    const alojamiento = r.IDCabana ? (r.NombreCabana || '—') : esPaqueteSolo ? (r.NombrePaquete || '—') : (r.NombreHabitacion || '—');
+    const alojTipo    = r.IDCabana ? 'Cabaña' : esPaqueteSolo ? 'Paquete' : 'Habitación';
 
     const todosServicios   = r.servicios || [];
     const serviciosOrig    = todosServicios.filter(s => !s.AgregadoEnProceso);
@@ -314,8 +315,9 @@ function buildReservationDetails(r) {
         ? Math.max(1, Math.round((new Date(r.FechaFinalizacion) - new Date(r.FechaInicio)) / 86400000))
         : 1;
     const totalServOrig = serviciosOrig.reduce((s, x) => s + Number(x.Subtotal || (Number(x.PrecioUnitario||0) * Number(x.Cantidad||1))), 0);
-    const alojTotal = Math.max(0, Number(r.SubTotal || 0) - totalServOrig);
-    const alojUnit  = noches > 0 ? Math.round(alojTotal / noches) : alojTotal;
+    const alojPrecioUnit = r.IDCabana ? Number(r.PrecioCabana || 0) : esPaqueteSolo ? Number(r.PrecioPaquete || 0) : Number(r.CostoHabitacion || 0);
+    const alojUnit  = alojPrecioUnit;
+    const alojTotal = alojPrecioUnit * noches;
     const idNum = String(r.IdReserva || '').padStart(6, '0');
 
     const trSrv = (s, esAdic) => {
