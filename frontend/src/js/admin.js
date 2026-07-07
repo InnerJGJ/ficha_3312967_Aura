@@ -627,6 +627,7 @@ window.verDetalleReserva = async (id) => {
         const serviciosEnProceso  = todosServicios.filter(s =>  s.AgregadoEnProceso);
         const serviciosPendientes = serviciosEnProceso.filter(s => !s.Pagado);
         const montoAdicionalPend  = serviciosPendientes.reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
+        const montoAdicionalTotal = serviciosEnProceso.reduce((sum, s) => sum + Number(s.Subtotal || 0), 0);
         const renderTagServicio = (s) => {
             const precioUnit = s.PrecioUnitario || s.Costo || s.precio || 0;
             const cant = s.Cantidad || 1;
@@ -653,6 +654,7 @@ window.verDetalleReserva = async (id) => {
             }).join('')
             : null;
         const montoTotalReal = Number(r.MontoTotal || 0) + montoAdicionalPend;
+        const totalFinal     = Number(r.MontoTotal || 0) + montoAdicionalTotal;
 
         document.getElementById('detalleTitulo').textContent = `Comprobante #${String(r.IdReserva).padStart(6,'0')}`;
         document.getElementById('detalleContent').style.padding = '0';
@@ -750,10 +752,9 @@ window.verDetalleReserva = async (id) => {
             <div class="inv-totals__row"><span>Subtotal:</span><b>${montoFmt(r.SubTotal)}</b></div>
             <div class="inv-totals__row"><span>IVA (19%):</span><b>${montoFmt(r.IVA)}</b></div>
             <hr class="inv-totals__divider">
-            <div class="inv-totals__grand"><span>Total:</span><span>${montoFmt(r.MontoTotal)}</span></div>
+            <div class="inv-totals__grand"><span>Total:</span><span>${montoFmt(totalFinal)}</span></div>
             ${montoAdicionalPend > 0 ? `
-            <div class="inv-totals__warn">⚠️ $${montoAdicionalPend.toLocaleString('es-CO')} en servicios pendientes de pago al check-out</div>
-            <div class="inv-totals__acum"><span>Total acumulado:</span><span>$${montoTotalReal.toLocaleString('es-CO')}</span></div>` : ''}
+            <div class="inv-totals__warn">⚠️ $${montoAdicionalPend.toLocaleString('es-CO')} en servicios pendientes de pago al check-out</div>` : ''}
           </div>
 
           <div class="inv-footer">
