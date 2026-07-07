@@ -12,7 +12,7 @@ const getAllReservations = async (page = null, limit = null) => {
                         r.SubTotal, r.Descuento, r.IVA, r.MontoTotal, r.MontoAdicional,
                         r.MetodoPago, r.IdEstadoReserva,
                         r.UsuarioIdusuario,
-                        u.NombreUsuario, u.NumeroDocumento AS NroDocumentoCliente, 
+                        u.NombreUsuario, u.NumeroDocumento AS NroDocumentoCliente,
                         e.NombreEstadoReserva, m.NomMetodoPago,
                         p.IDPaquete, p.nombre AS NombrePaquete, p.precio AS PrecioPaquete,
                         h_direct.IDHabitacion AS IDHabitacionDirecta,
@@ -20,7 +20,12 @@ const getAllReservations = async (page = null, limit = null) => {
                         COALESCE(h_direct.NombreHabitacion, h_paq.NombreHabitacion) AS NombreHabitacion,
                         COALESCE(h_direct.precio, h_paq.precio) AS CostoHabitacion,
                         drc.IDCabana, c.NombreCabana, c.PrecioNoche AS PrecioCabana,
-                        r.IdEstadoReserva AS Estado
+                        r.IdEstadoReserva AS Estado,
+                        COALESCE((
+                          SELECT SUM(drs.Precio * drs.Cantidad)
+                          FROM detallereservaservicio drs
+                          WHERE drs.IDReserva = r.IdReserva AND drs.AgregadoEnProceso = 1
+                        ), 0) AS MontoAdicionalStay
                  FROM reserva r
                  LEFT JOIN usuarios u ON r.UsuarioIdusuario = u.IDUsuario
                  LEFT JOIN estadosreserva e ON r.IdEstadoReserva = e.IdEstadoReserva

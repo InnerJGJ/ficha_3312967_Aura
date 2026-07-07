@@ -411,7 +411,7 @@ function renderReservas(reservas, kpis) {
                             </div>
                             <div class="reserva-card__detalle">
                                 <i data-lucide="dollar-sign" style="width:14px; color:#10b981;"></i>
-                                <div><span class="reserva-card__detalle-label">Total</span><span class="reserva-card__detalle-val reserva-card__total">$${(r.MontoTotal || 0).toLocaleString('es-CO')}</span></div>
+                                <div><span class="reserva-card__detalle-label">Total</span><span class="reserva-card__detalle-val reserva-card__total">$${((r.MontoTotal || 0) + (r.MontoAdicionalStay || 0)).toLocaleString('es-CO')}</span></div>
                             </div>
                         </div>
                         ${r.MontoAdicional > 0 ? `
