@@ -71,6 +71,11 @@ const runMigrations = async () => {
       ALTER TABLE paquetes MODIFY COLUMN IDServicio VARCHAR(255) NULL DEFAULT NULL
     `).catch(() => {}); // silenciar si ya es compatible
 
+    // Estado 5: En Proceso (check-in activo) — puede faltar en BDs antiguas
+    await db.query(
+      `INSERT IGNORE INTO estadosreserva (IdEstadoReserva, NombreEstadoReserva) VALUES (5, 'En Proceso')`
+    );
+
     // Servicios adicionales agregados durante estadía (En Proceso)
     await addColumnIfMissing('detallereservaservicio', 'AgregadoEnProceso', 'TINYINT(1) NOT NULL DEFAULT 0');
     await addColumnIfMissing('detallereservaservicio', 'Pagado', 'TINYINT(1) NOT NULL DEFAULT 0');
