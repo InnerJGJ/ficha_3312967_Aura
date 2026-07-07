@@ -246,6 +246,7 @@ async function cargarReservas(page = 1) {
             total: responseData.total || 0,
             pendientes: responseData.pendientes || 0,
             confirmadas: responseData.confirmadas || 0,
+            enProceso: responseData.enProceso || 0,
             montoTotal: responseData.montoTotal || 0
         };
 
