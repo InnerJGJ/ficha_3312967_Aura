@@ -303,7 +303,7 @@ async function loadReservations() {
                     ${
                       esModificable
                         ? `<button class="btn btn-outline-peligro" onclick="solicitarCancelacion(${r.IdReserva}, ${r.MontoTotal || 0})">Cancelar</button>`
-                        : `<button class="btn btn-outline-peligro" disabled style="opacity:0.35;cursor:not-allowed;">${idEstado === 4 ? 'Completada' : 'Cancelada'}</button>`
+                        : ''
                     }
                 </div>
             </div>`;
