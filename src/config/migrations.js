@@ -1,4 +1,5 @@
 const db = require('./db');
+const bcrypt = require('bcryptjs');
 
 const addColumnIfMissing = async (table, column, definition) => {
   const [rows] = await db.query(
@@ -83,6 +84,21 @@ const runMigrations = async () => {
     await addColumnIfMissing('reserva', 'MontoAdicional', 'DECIMAL(10,2) NOT NULL DEFAULT 0');
     // Método de pago usado para cancelar servicios adicionales al hacer check-out
     await addColumnIfMissing('reserva', 'MetodoPagoAdicional', 'INT NULL');
+
+    // Admin por defecto — idempotente: solo crea si no existe
+    const adminEmail = 'godienser@gmail.com';
+    const [[adminExiste]] = await db.query(
+      'SELECT IDUsuario FROM usuarios WHERE LOWER(Email) = LOWER(?) LIMIT 1', [adminEmail]
+    );
+    if (!adminExiste) {
+      const hash = await bcrypt.hash('Godie777-', 10);
+      await db.query(
+        `INSERT INTO usuarios (NombreUsuario, Apellido, Email, Contrasena, IDRol, Estado, EmailVerificado)
+         VALUES ('Godienser', 'Admin', ?, ?, 2, 1, 1)`,
+        [adminEmail, hash]
+      );
+      console.log('[migration] Admin por defecto creado: godienser@gmail.com');
+    }
 
     console.log('[migration] all migrations OK');
   } catch (err) {
