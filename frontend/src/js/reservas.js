@@ -808,6 +808,7 @@ function poblarModalCancelacion(id, montoTotal, politica, mensajeExtra) {
 
     // Resumen financiero
     document.getElementById('cancelMontoTotal').textContent = formatCurrency(montoTotal);
+    document.getElementById('cancelMontoTotalRaw').value = montoTotal;
     document.getElementById('cancelPenalizacionLabel').textContent =
         esGratuita ? 'Penalización aplicada' : `Penalización (${politica.porcentajePenalizacion}%)`;
     document.getElementById('cancelPenalizacionValor').textContent =
@@ -820,17 +821,35 @@ function poblarModalCancelacion(id, montoTotal, politica, mensajeExtra) {
         esGratuita ? 'Esta cancelación no generará ningún cargo.' : '⚠️ Esta cancelación generará un cargo de penalización.';
 }
 
+function abrirMotivoCliente() {
+    const ta = document.getElementById('cancelClientReasonText');
+    if (ta) ta.value = '';
+    const err = document.getElementById('cancelClientReasonErr');
+    if (err) err.style.display = 'none';
+    document.getElementById('cancelClientReasonModal').style.display = 'flex';
+}
+
+function cerrarMotivoCliente() {
+    document.getElementById('cancelClientReasonModal').style.display = 'none';
+}
+
 /**
- * Paso 2: El usuario ya vio la política y confirma la cancelación.
+ * Paso 2: El usuario escribió el motivo y confirma la cancelación.
  * Envía confirmarConPenalizacion=true para ejecutar la cancelación en la BD.
  */
 async function ejecutarCancelacion() {
-    const id = document.getElementById('cancelReservaId').value;
-    const montoEl = document.getElementById('cancelMontoTotal').textContent;
-    // Extraer el número del texto formateado
-    const montoTotal = parseFloat(montoEl.replace(/[^0-9,.]/g, '').replace(',', '.')) || 0;
+    const motivoEl = document.getElementById('cancelClientReasonText');
+    const motivo = motivoEl ? motivoEl.value.trim() : '';
+    if (!motivo) {
+        const err = document.getElementById('cancelClientReasonErr');
+        if (err) err.style.display = 'block';
+        return;
+    }
 
-    const btn = document.getElementById('cancelConfirmBtn');
+    const id = document.getElementById('cancelReservaId').value;
+    const montoTotal = Number(document.getElementById('cancelMontoTotalRaw').value) || 0;
+
+    const btn = document.getElementById('cancelClientReasonConfirmBtn');
     btn.disabled = true;
     btn.textContent = 'Procesando...';
 
@@ -838,7 +857,7 @@ async function ejecutarCancelacion() {
         const response = await fetch(`/api/reservas/${id}/cancel`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ confirmarConPenalizacion: true })
+            body: JSON.stringify({ confirmarConPenalizacion: true, motivo })
         });
 
         const data = await response.json();
@@ -846,10 +865,11 @@ async function ejecutarCancelacion() {
         if (!response.ok) {
             alert(data.message || 'Error al cancelar la reserva.');
             btn.disabled = false;
-            btn.textContent = '❌ Confirmar cancelación';
+            btn.textContent = 'Confirmar Cancelación';
             return;
         }
 
+        cerrarMotivoCliente();
         cerrarModalCancelacion();
         mostrarResultadoCancelacion(data.data || data, montoTotal);
         await loadReservations();
@@ -859,7 +879,7 @@ async function ejecutarCancelacion() {
         console.error('Error ejecutando cancelación:', error);
         alert('Error de conexión. Por favor intenta de nuevo.');
         btn.disabled = false;
-        btn.textContent = '❌ Confirmar cancelación';
+        btn.textContent = 'Confirmar Cancelación';
     }
 }
 

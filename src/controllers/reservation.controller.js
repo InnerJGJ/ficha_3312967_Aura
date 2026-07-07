@@ -174,10 +174,10 @@ const getAvailability = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const cancelReservation = async (req, res, next) => {
   try {
-    const { confirmarConPenalizacion } = req.body || {};
+    const { confirmarConPenalizacion, motivo } = req.body || {};
     const result = await reservationService.cancelReservation(
       req.params.id,
-      { confirmarConPenalizacion: confirmarConPenalizacion === true }
+      { confirmarConPenalizacion: confirmarConPenalizacion === true, motivo: motivo || null }
     );
 
     if (!result) {

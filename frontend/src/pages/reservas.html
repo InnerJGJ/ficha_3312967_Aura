@@ -231,7 +231,7 @@
       <div style="display:flex;gap:0.75rem;flex-direction:column;">
         <button id="cancelConfirmBtn" class="btn btn-primario"
           style="background:linear-gradient(135deg,#dc2626,#ef4444);border:none;"
-          onclick="ejecutarCancelacion()">
+          onclick="abrirMotivoCliente()">
           ❌ Confirmar cancelación
         </button>
         <button class="btn btn-outline" onclick="cerrarModalCancelacion()">
@@ -241,6 +241,38 @@
 
       <input type="hidden" id="cancelReservaId">
       <input type="hidden" id="cancelRequieresConfirmacion">
+      <input type="hidden" id="cancelMontoTotalRaw">
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MODAL: MOTIVO DE CANCELACIÓN (cliente)
+  ════════════════════════════════════════════════════════ -->
+  <div id="cancelClientReasonModal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;z-index:1100;">
+    <div class="modal-content" style="max-width:480px;width:90%;padding:0;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:24px 28px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:1.6rem;">⚠️</span>
+          <div>
+            <h3 style="color:#fff;margin:0;font-size:1.1rem;font-weight:700;">Motivo de cancelación</h3>
+            <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:0.85rem;">Cuéntanos por qué deseas cancelar tu reserva.</p>
+          </div>
+        </div>
+      </div>
+      <div style="padding:24px 28px;background:#fff;">
+        <label style="display:block;font-size:0.82rem;font-weight:700;color:#1a2b4a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+          Motivo <span style="color:#dc2626;">*</span>
+        </label>
+        <textarea id="cancelClientReasonText"
+          placeholder="Describe brevemente el motivo de tu cancelación."
+          style="width:100%;min-height:100px;padding:12px 14px;border:1.5px solid rgba(220,38,38,0.35);border-radius:10px;font-size:0.9rem;font-family:inherit;color:#1a2b4a;background:#fff9f9;resize:vertical;outline:none;box-sizing:border-box;"
+          oninput="document.getElementById('cancelClientReasonErr').style.display='none'"></textarea>
+        <p id="cancelClientReasonErr" style="display:none;color:#dc2626;font-size:0.8rem;margin:4px 0 0;">El motivo es obligatorio.</p>
+        <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;">
+          <button onclick="cerrarMotivoCliente()" style="padding:10px 20px;border:1.5px solid rgba(26,43,74,0.2);background:#fff;border-radius:8px;cursor:pointer;font-size:0.88rem;color:#1a2b4a;font-weight:600;">Volver</button>
+          <button id="cancelClientReasonConfirmBtn" onclick="ejecutarCancelacion()" style="padding:10px 22px;background:linear-gradient(135deg,#dc2626,#9f1239);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:700;">Confirmar Cancelación</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -288,7 +320,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/app.js"></script>
-  <script src="../js/reservas.js?v=2.4"></script>
+  <script src="../js/reservas.js?v=2.5"></script>
 
 </body>
 </html>

@@ -1271,7 +1271,7 @@ const evaluarPoliticaCancelacion = (reservation) => {
 //   - Envía correo de cancelación al cliente (no bloquea si falla).
 //   - NO elimina físicamente ningún registro (historial contable).
 // ─────────────────────────────────────────────────────────────────────────────
-const cancelReservation = async (id, { confirmarConPenalizacion = false } = {}) => {
+const cancelReservation = async (id, { confirmarConPenalizacion = false, motivo = null } = {}) => {
   // 1. Obtener datos completos de la reserva
   const [rows] = await db.query(
     `SELECT r.IdReserva, r.IdEstadoReserva, r.MontoTotal, r.FechaInicio,
@@ -1345,6 +1345,13 @@ const cancelReservation = async (id, { confirmarConPenalizacion = false } = {}) 
         politica.valorReembolso,
         id
       ]
+    );
+
+    await connection.query(
+      `INSERT INTO reserva_historial (IdReserva, EstadoAnterior, EstadoNuevo, ModificadoPor, Motivo)
+       VALUES (?, ?, ?, 'cliente', ?)`,
+      [id, reserva.IdEstadoReserva, ESTADO_CANCELADO,
+       motivo || `Cancelación solicitada por el cliente (${politica.tipoCancelacion})`]
     );
 
     await connection.commit();
