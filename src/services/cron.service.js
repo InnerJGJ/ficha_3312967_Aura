@@ -107,6 +107,37 @@ const enviarRecordatoriosCheckin = async () => {
   }
 };
 
+// ─── Regla 8: auto-activar En Proceso cuando llega la fecha de check-in ────
+const activarEnProceso = async () => {
+  try {
+    const [confirmadas] = await db.query(
+      `SELECT r.IdReserva, r.UsuarioIdusuario
+       FROM reserva r
+       WHERE r.IdEstadoReserva = 2
+         AND DATE(r.FechaInicio) <= CURDATE()`
+    );
+
+    for (const reserva of confirmadas) {
+      try {
+        await db.query(
+          `UPDATE reserva SET IdEstadoReserva = 5 WHERE IdReserva = ?`,
+          [reserva.IdReserva]
+        );
+        await db.query(
+          `INSERT INTO reserva_historial (IdReserva, EstadoAnterior, EstadoNuevo, ModificadoPor, Motivo)
+           VALUES (?, 2, 5, 'sistema', 'Check-in automático: fecha de estadía alcanzada')`,
+          [reserva.IdReserva]
+        );
+        console.log(`[cron] Reserva #${reserva.IdReserva} activada a En Proceso`);
+      } catch (err) {
+        console.error(`[cron] Error activando reserva #${reserva.IdReserva}:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[cron] Error en activarEnProceso:', err.message);
+  }
+};
+
 // ─── Inicializar trabajos ────────────────────────────────────────────────────
 const startJobs = () => {
   // Regla 3: verificar expiradas cada 5 minutos
@@ -116,6 +147,10 @@ const startJobs = () => {
   // Regla 7: verificar recordatorios cada hora
   setInterval(enviarRecordatoriosCheckin, 60 * 60 * 1000);
   enviarRecordatoriosCheckin(); // también al arrancar
+
+  // Regla 8: activar En Proceso cuando llega fecha de check-in (cada 5 min)
+  setInterval(activarEnProceso, 5 * 60 * 1000);
+  activarEnProceso(); // también al arrancar
 
   console.log('[cron] Trabajos en segundo plano iniciados');
 };

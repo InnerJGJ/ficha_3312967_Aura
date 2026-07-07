@@ -301,7 +301,7 @@ async function loadReservations() {
                         : ''
                     }
                     ${
-                      esModificable
+                      (esModificable && idEstado !== 5)
                         ? `<button class="btn btn-outline-peligro" onclick="solicitarCancelacion(${r.IdReserva}, ${r.MontoTotal || 0})">Cancelar</button>`
                         : ''
                     }

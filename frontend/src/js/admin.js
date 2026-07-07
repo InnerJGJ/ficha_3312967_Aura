@@ -12,7 +12,7 @@ function ordenarEstados(lista) {
 // opciones del <select> de la card; la validación real ocurre siempre en el backend.
 const TRANSICIONES_VALIDAS_FRONT = {
     1: [2, 3], // Pendiente   -> Confirmada, Cancelada
-    2: [5, 3], // Confirmada  -> En Proceso, Cancelada
+    2: [3], // Confirmada  -> Cancelada (En Proceso se activa automáticamente por fechas)
     5: [4],    // En Proceso  -> Completada
     3: [],     // Cancelada   -> terminal
     4: [],     // Completada  -> terminal
