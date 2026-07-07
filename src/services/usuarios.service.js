@@ -152,6 +152,20 @@ const remove = async (id) => {
       err.statusCode = 409;
       throw err;
     }
+
+    // Bloquear si es el último administrador del sistema
+    const [[usuario]] = await db.query('SELECT IDRol FROM usuarios WHERE IDUsuario = ?', [id]);
+    if (usuario && usuario.IDRol === 2) {
+      const [[{ totalAdmins }]] = await db.query(
+        "SELECT COUNT(*) AS totalAdmins FROM usuarios WHERE IDRol = 2 AND Estado = 1"
+      );
+      if (totalAdmins <= 1) {
+        const err = new Error('No se puede eliminar el único administrador del sistema. Crea otro administrador primero.');
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+
     await db.query('DELETE FROM usuarios WHERE IDUsuario = ?', [id]);
   } catch (error) {
     throw error;
