@@ -894,9 +894,9 @@ const TRANSICIONES_VALIDAS = {
 // Modificar aquí afecta toda la lógica sin tocar el código de negocio.
 // ─────────────────────────────────────────────────────────────────────────────
 /** Días mínimos de anticipación para que la cancelación sea gratuita */
-const DIAS_CANCELACION_GRATIS  = 7;
-/** Fracción del MontoTotal que se retiene si se cancela dentro del plazo de penalización (0.40 = 40%) */
-const PORCENTAJE_PENALIZACION  = 0.40;
+const DIAS_CANCELACION_GRATIS  = 3;
+/** Fracción del MontoTotal que se retiene si se cancela dentro del plazo (1.0 = 100%, sin reembolso) */
+const PORCENTAJE_PENALIZACION  = 1.0;
 
 const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirmarPagoAdicional = false, metodoPagoAdicional = null) => {
   // 1. Obtener estado actual
@@ -1224,16 +1224,15 @@ const evaluarPoliticaCancelacion = (reservation) => {
     ? new Date(reservation.FechaInicio)
     : null;
 
-  // Si no hay fecha de inicio, aplicar penalización por seguridad
+  // Si no hay fecha de inicio, aplicar sin reembolso por seguridad
   if (!fechaInicio) {
-    const valorPenalizacion = parseFloat((montoTotal * PORCENTAJE_PENALIZACION).toFixed(2));
     return {
       tipoCancelacion:        'penalizada',
-      porcentajePenalizacion: PORCENTAJE_PENALIZACION * 100,
-      valorPenalizacion,
-      valorReembolso:         parseFloat((montoTotal - valorPenalizacion).toFixed(2)),
+      porcentajePenalizacion: 100,
+      valorPenalizacion:      montoTotal,
+      valorReembolso:         0,
       diasRestantes:          0,
-      mensaje: `La reserva no tiene fecha de inicio registrada. Se aplica una penalización del ${PORCENTAJE_PENALIZACION * 100}%.`
+      mensaje: `La reserva no tiene fecha de inicio registrada. No se realizará ningún reembolso.`
     };
   }
 
@@ -1249,26 +1248,23 @@ const evaluarPoliticaCancelacion = (reservation) => {
       valorPenalizacion:      0,
       valorReembolso:         montoTotal,
       diasRestantes,
-      mensaje: `Cancelación gratuita. Faltan ${diasRestantes} días para tu llegada (mínimo requerido: ${DIAS_CANCELACION_GRATIS} días). Se reembolsará el 100% del valor pagado.`
+      mensaje: `Cancelación gratuita. Faltan ${diasRestantes} día(s) para tu llegada. Con ${DIAS_CANCELACION_GRATIS} o más días de anticipación la cancelación es completamente gratuita. Se reembolsará el 100% del valor pagado.`
     };
   }
 
-  // ── Cancelación CON PENALIZACIÓN ────────────────────────────────────────
-  const valorPenalizacion = parseFloat((montoTotal * PORCENTAJE_PENALIZACION).toFixed(2));
-  const valorReembolso    = parseFloat((montoTotal - valorPenalizacion).toFixed(2));
-
+  // ── Cancelación SIN REEMBOLSO ────────────────────────────────────────────
   let mensaje;
   if (diasRestantes < 0) {
-    mensaje = `La fecha de llegada ya pasó hace ${Math.abs(diasRestantes)} día(s). Se aplica una penalización del ${PORCENTAJE_PENALIZACION * 100}% sobre el total de la reserva.`;
+    mensaje = `La fecha de llegada ya pasó hace ${Math.abs(diasRestantes)} día(s). No se realizará ningún reembolso.`;
   } else {
-    mensaje = `Faltan solo ${diasRestantes} día(s) para tu llegada. La cancelación con menos de ${DIAS_CANCELACION_GRATIS} días de anticipación genera una penalización del ${PORCENTAJE_PENALIZACION * 100}% sobre el total de la reserva.`;
+    mensaje = `Faltan solo ${diasRestantes} día(s) para tu llegada. La cancelación con menos de ${DIAS_CANCELACION_GRATIS} días de anticipación no tiene reembolso.`;
   }
 
   return {
     tipoCancelacion:        'penalizada',
-    porcentajePenalizacion: PORCENTAJE_PENALIZACION * 100,
-    valorPenalizacion,
-    valorReembolso,
+    porcentajePenalizacion: 100,
+    valorPenalizacion:      montoTotal,
+    valorReembolso:         0,
     diasRestantes,
     mensaje
   };
