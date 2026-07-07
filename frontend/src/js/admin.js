@@ -2213,7 +2213,8 @@ window.eliminarCabana = async (id) => {
                     cargarCabanas();
                     mostrarNotificacion('Cabaña eliminada correctamente.', 'success');
                 } else {
-                    mostrarNotificacion('No se pudo eliminar la cabaña.', 'error');
+                    const data = await res.json().catch(() => ({}));
+                    mostrarNotificacion(data.error || 'No se pudo eliminar la cabaña.', 'error');
                 }
             } catch (e) {
                 mostrarNotificacion('Error de conexión al servidor.', 'error');
@@ -2766,7 +2767,8 @@ window.eliminarHabitacion = async (id) => {
                     cargarHabitaciones();
                     mostrarNotificacion('Habitación eliminada correctamente.', 'success');
                 } else {
-                    mostrarNotificacion('Error al eliminar habitación.', 'error');
+                    const data = await res.json().catch(() => ({}));
+                    mostrarNotificacion(data.error || 'No se pudo eliminar la habitación.', 'error');
                 }
             } catch (e) {
                 mostrarNotificacion('Error de conexión al servidor.', 'error');

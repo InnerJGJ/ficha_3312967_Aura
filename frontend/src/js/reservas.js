@@ -796,29 +796,32 @@ function poblarModalCancelacion(id, montoTotal, politica, mensajeExtra) {
 
     // Badge de tipo
     const badge = document.getElementById('cancelTipoBadge');
-    badge.textContent = esGratuita ? '✅ Cancelación Gratuita' : `⚠️ Cancelación con Penalización (${politica.porcentajePenalizacion}%)`;
+    badge.textContent = esGratuita ? '✅ Cancelación Gratuita' : '❌ Sin Reembolso';
     badge.style.background = esGratuita ? '#10b981' : '#ef4444';
     badge.style.color = '#fff';
 
     // Mensaje de política
     const politicaBox = document.getElementById('cancelPoliticaBox');
-    politicaBox.style.borderLeftColor = esGratuita ? '#10b981' : '#f59e0b';
-    politicaBox.style.background = esGratuita ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)';
+    politicaBox.style.borderLeftColor = esGratuita ? '#10b981' : '#ef4444';
+    politicaBox.style.background = esGratuita ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
     document.getElementById('cancelPoliticaMensaje').textContent = mensajeExtra || politica.mensaje || '';
 
     // Resumen financiero
     document.getElementById('cancelMontoTotal').textContent = formatCurrency(montoTotal);
     document.getElementById('cancelMontoTotalRaw').value = montoTotal;
     document.getElementById('cancelPenalizacionLabel').textContent =
-        esGratuita ? 'Penalización aplicada' : `Penalización (${politica.porcentajePenalizacion}%)`;
+        esGratuita ? 'Sin cargo adicional' : 'Valor retenido';
     document.getElementById('cancelPenalizacionValor').textContent =
         esGratuita ? '$0 (sin cargo)' : formatCurrency(politica.valorPenalizacion);
     document.getElementById('cancelPenalizacionValor').style.color = esGratuita ? '#10b981' : '#ef4444';
+    document.getElementById('cancelReembolsoLabel').textContent =
+        esGratuita ? 'A reembolsar' : 'Sin reembolso';
     document.getElementById('cancelReembolsoValor').textContent = formatCurrency(politica.valorReembolso);
+    document.getElementById('cancelReembolsoValor').style.color = esGratuita ? '#10b981' : '#6b7280';
 
     // Subtítulo del modal
     document.getElementById('cancelModalSubtitle').textContent =
-        esGratuita ? 'Esta cancelación no generará ningún cargo.' : '⚠️ Esta cancelación generará un cargo de penalización.';
+        esGratuita ? 'Esta cancelación no generará ningún cargo.' : '⚠️ Esta cancelación no tiene reembolso.';
 }
 
 function abrirMotivoCliente() {
@@ -894,7 +897,7 @@ function mostrarResultadoCancelacion(data, montoTotalFallback) {
     // Ícono y badge
     document.getElementById('cancelResultIcon').textContent = esGratuita ? '✅' : '⚠️';
     const badge = document.getElementById('cancelResultBadge');
-    badge.textContent = esGratuita ? '✅ Cancelación Gratuita' : `⚠️ Penalización del ${politica.porcentajePenalizacion || 40}%`;
+    badge.textContent = esGratuita ? '✅ Cancelación Gratuita' : '❌ Sin Reembolso';
     badge.style.background = esGratuita ? '#10b981' : '#ef4444';
     badge.style.color = '#fff';
 
@@ -902,16 +905,19 @@ function mostrarResultadoCancelacion(data, montoTotalFallback) {
     document.getElementById('cancelResultSubtitle').textContent =
         esGratuita
             ? 'Tu reserva fue cancelada sin ningún cargo. Recibirás el reembolso completo.'
-            : 'Tu reserva fue cancelada. Revisa los valores a continuación.';
+            : 'Tu reserva fue cancelada. No se realizará ningún reembolso.';
 
     // Resumen financiero
     document.getElementById('cancelResultTotal').textContent = formatCurrency(montoTotal);
     document.getElementById('cancelResultPenLabel').textContent =
-        esGratuita ? 'Penalización aplicada' : `Penalización retenida (${politica.porcentajePenalizacion || 0}%)`;
+        esGratuita ? 'Sin cargo adicional' : 'Valor retenido';
     document.getElementById('cancelResultPenValor').textContent =
         esGratuita ? '$0 (sin cargo)' : formatCurrency(politica.valorPenalizacion || 0);
     document.getElementById('cancelResultPenValor').style.color = esGratuita ? '#10b981' : '#ef4444';
-    document.getElementById('cancelResultReembolso').textContent = formatCurrency(politica.valorReembolso || montoTotal);
+    document.getElementById('cancelResultReembolsoLabel').textContent =
+        esGratuita ? 'Valor a reembolsar' : 'Sin reembolso';
+    document.getElementById('cancelResultReembolso').textContent = formatCurrency(politica.valorReembolso ?? (esGratuita ? montoTotal : 0));
+    document.getElementById('cancelResultReembolso').style.color = esGratuita ? '#10b981' : '#6b7280';
 
     // Mensaje
     document.getElementById('cancelResultMensaje').textContent = data.mensaje || politica.mensaje || '';
