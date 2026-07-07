@@ -144,6 +144,14 @@ const changeRole = async (id, nuevoRol) => {
 
 const remove = async (id) => {
   try {
+    const [[{ total }]] = await db.query(
+      'SELECT COUNT(*) AS total FROM reserva WHERE UsuarioIdusuario = ?', [id]
+    );
+    if (total > 0) {
+      const err = new Error(`No se puede eliminar este usuario porque tiene ${total} reserva(s) asociada(s). Desactívalo en su lugar.`);
+      err.statusCode = 409;
+      throw err;
+    }
     await db.query('DELETE FROM usuarios WHERE IDUsuario = ?', [id]);
   } catch (error) {
     throw error;

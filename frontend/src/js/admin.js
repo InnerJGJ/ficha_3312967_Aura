@@ -2896,15 +2896,16 @@ window.editarUsuario = async (id) => {
 window.eliminarUsuario = async (id) => {
     mostrarConfirmacion(
         '¿Eliminar Usuario?',
-        '¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.',
+        '¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer. Los usuarios con reservas asociadas no pueden eliminarse.',
         async () => {
             try {
                 const res = await fetch('/api/usuarios/' + id, { method: 'DELETE' });
+                const data = await res.json().catch(() => ({}));
                 if (res.ok) {
                     cargarUsuarios();
                     mostrarNotificacion('Usuario eliminado con éxito.', 'success');
                 } else {
-                    mostrarNotificacion('Error al eliminar el usuario.', 'error');
+                    mostrarNotificacion(data.message || 'Error al eliminar el usuario.', 'error');
                 }
             } catch (e) {
                 mostrarNotificacion('Error de conexión al servidor.', 'error');

@@ -54,6 +54,7 @@ const remove = async (req, res, next) => {
     await usuariosService.remove(req.params.id);
     res.status(200).json({ message: 'Usuario eliminado' });
   } catch (error) {
+    if (error.statusCode) return res.status(error.statusCode).json({ message: error.message });
     next(error);
   }
 };
