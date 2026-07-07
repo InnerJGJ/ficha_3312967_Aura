@@ -100,6 +100,21 @@ const runMigrations = async () => {
       console.log('[migration] Admin por defecto creado: godienser@gmail.com');
     }
 
+    // Cliente por defecto — idempotente: solo crea si no existe
+    const clienteEmail = 'napenagosmarin@gmail.com';
+    const [[clienteExiste]] = await db.query(
+      'SELECT IDUsuario FROM usuarios WHERE LOWER(Email) = LOWER(?) LIMIT 1', [clienteEmail]
+    );
+    if (!clienteExiste) {
+      const hashCliente = await bcrypt.hash('Nicopenagos7-', 10);
+      await db.query(
+        `INSERT INTO usuarios (NombreUsuario, Apellido, Email, Contrasena, IDRol, Estado, EmailVerificado)
+         VALUES ('Nicolás', 'Penagos', ?, ?, 1, 1, 1)`,
+        [clienteEmail, hashCliente]
+      );
+      console.log('[migration] Cliente por defecto creado: napenagosmarin@gmail.com');
+    }
+
     console.log('[migration] all migrations OK');
   } catch (err) {
     console.error('[migration] Error:', err.message);
