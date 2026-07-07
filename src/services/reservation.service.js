@@ -878,7 +878,7 @@ const NOMBRES_ESTADO = {
 // Transiciones válidas por estado actual
 const TRANSICIONES_VALIDAS = {
   [ESTADO_PENDIENTE]:  [ESTADO_CONFIRMADO, ESTADO_CANCELADO],
-  [ESTADO_CONFIRMADO]: [ESTADO_CANCELADO],
+  [ESTADO_CONFIRMADO]: [ESTADO_EN_PROCESO, ESTADO_CANCELADO],
   [ESTADO_EN_PROCESO]: [ESTADO_COMPLETADO],
   [ESTADO_CANCELADO]:  [],
   [ESTADO_COMPLETADO]: [],
@@ -896,7 +896,7 @@ const PORCENTAJE_PENALIZACION  = 0.40;
 const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirmarPagoAdicional = false, metodoPagoAdicional = null) => {
   // 1. Obtener estado actual
   const [rows] = await db.query(
-    'SELECT r.IdEstadoReserva, r.UsuarioIdusuario, r.MontoAdicional FROM reserva r WHERE r.IdReserva = ?',
+    'SELECT r.IdEstadoReserva, r.UsuarioIdusuario, r.MontoAdicional, r.FechaInicio FROM reserva r WHERE r.IdReserva = ?',
     [id]
   );
   if (!rows.length) return null;
@@ -918,7 +918,21 @@ const updateReservationStatus = async (id, nuevoEstadoId, motivo = null, confirm
     throw err;
   }
 
-  // 2b. Bloquear checkout si hay servicios adicionales sin pagar
+  // 2b. Confirmada → En Proceso: solo si ya llegó el día de check-in
+  if (estadoActual === ESTADO_CONFIRMADO && nuevoId === ESTADO_EN_PROCESO) {
+    const fechaInicio = rows[0].FechaInicio;
+    const fechaInicioStr = fechaInicio instanceof Date
+      ? fechaInicio.toISOString().split('T')[0]
+      : String(fechaInicio).split('T')[0];
+    const hoyStr = new Date().toISOString().split('T')[0];
+    if (fechaInicioStr > hoyStr) {
+      const err = new Error(`La reserva no puede iniciarse antes de la fecha de check-in (${fechaInicioStr}).`);
+      err.statusCode = 422;
+      throw err;
+    }
+  }
+
+  // 2c. Bloquear checkout si hay servicios adicionales sin pagar
   if (nuevoId === ESTADO_COMPLETADO && estadoActual === ESTADO_EN_PROCESO) {
     const [[{ pendientes }]] = await db.query(
       `SELECT COUNT(*) AS pendientes FROM detallereservaservicio

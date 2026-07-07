@@ -12,7 +12,7 @@ function ordenarEstados(lista) {
 // opciones del <select> de la card; la validación real ocurre siempre en el backend.
 const TRANSICIONES_VALIDAS_FRONT = {
     1: [2, 3], // Pendiente   -> Confirmada, Cancelada
-    2: [3], // Confirmada  -> Cancelada (En Proceso se activa automáticamente por fechas)
+    2: [3], // Confirmada  -> Cancelada base; En Proceso se agrega dinámicamente si FechaInicio <= hoy
     5: [4],    // En Proceso  -> Completada
     3: [],     // Cancelada   -> terminal
     4: [],     // Completada  -> terminal
@@ -352,7 +352,13 @@ function renderReservas(reservas, kpis) {
                     : '';
 
                 // Transiciones válidas desde el estado actual (terminal => sin transiciones => select deshabilitado)
-                const transicionesValidas = TRANSICIONES_VALIDAS_FRONT[r.IdEstadoReserva] || [];
+                // Para Confirmada: habilitar En Proceso solo si ya llegó el día de check-in
+                let transicionesValidas = [...(TRANSICIONES_VALIDAS_FRONT[r.IdEstadoReserva] || [])];
+                if (r.IdEstadoReserva === 2 && r.FechaInicio) {
+                    const hoy = new Date().toISOString().split('T')[0];
+                    const fechaInicio = r.FechaInicio.split('T')[0];
+                    if (fechaInicio <= hoy) transicionesValidas.push(5);
+                }
                 const esTerminal = esCompletada || esCancelada;
 
                 return `
